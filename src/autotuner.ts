@@ -1,11 +1,15 @@
-'use strict';
-var math = require('mathjs');
+import * as tensorflow from '@tensorflow/tfjs';
+//import  * as Optimizer from './optimizer';
 
-module.exports = {
-    Optimizer: require('./optimizer'),
-    Paramspace: require('./paramspace'),
-    Priors: require('./priors')
-};
+const models: tensorflow.Sequential[] = [];
+
+export { models };
+
+// module.exports = {
+//     Optimizer: require('./optimizer'),
+//     Paramspace: require('./paramspace'),
+//     Priors: require('./priors')
+// };
 
 /*
 var domain = [1,2,3];
