@@ -1,6 +1,4 @@
-'use strict';
-
-var math = require('mathjs');
+import * as math from 'mathjs';
 
 /**
  * Retrieve the array key corresponding to the largest element in the array.
@@ -37,7 +35,4 @@ function expectedImprovement (bestObjective, mean, std) {
     return math.dotMultiply(std, math.add(math.dotMultiply(gamma, cdf), pdf));
 }
 
-module.exports = {
-    argmax: argmax,
-    expectedImprovement: expectedImprovement
-};
+export { argmax, expectedImprovement };

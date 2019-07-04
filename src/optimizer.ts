@@ -1,10 +1,7 @@
-'use strict';
-
-var equal = require('deep-equal');
-var difference = require('lodash/difference');
-var math = require('mathjs');
-var util = require('./util');
-
+import * as equal from 'deep-equal';
+import * as difference from 'lodash/difference';
+import * as math from 'mathjs';
+import * as util from './util';
 
 function Optimizer (domain, modelsDomains, mean=null, kernel=null, delays=null, strategy='ei') {
     this.domain = domain;
@@ -166,5 +163,4 @@ Optimizer.prototype.getNextPoint = function (excludeModels=[]) {
 
 };
 
-
-module.exports = Optimizer;
+export { Optimizer };

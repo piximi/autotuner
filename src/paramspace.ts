@@ -1,5 +1,3 @@
-'use strict';
-
 function Paramspace() {
     this.models = {};
     this.domain = [];
@@ -47,4 +45,4 @@ Paramspace.prototype.addModel = function (modelName, modelParameters) {
     this.domainIndices = Array.from(this.domain, (x,i) => i);
 };
 
-module.exports = Paramspace;
+export { Paramspace };

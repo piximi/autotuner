@@ -1,7 +1,5 @@
-'use strict';
-
-var equal = require('deep-equal');
-var math = require('mathjs');
+import * as equal from 'deep-equal';
+import * as math from 'mathjs';
 
 function Priors (domain) {
     this.domain = domain
@@ -62,4 +60,4 @@ Priors.prototype.commit = function (observedValues) {
     }
 };
 
-module.exports = Priors;
+export { Priors };

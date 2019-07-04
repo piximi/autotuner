@@ -1,15 +1,11 @@
 import * as tensorflow from '@tensorflow/tfjs';
-//import  * as Optimizer from './optimizer';
+import  * as Optimizer from './optimizer';
+import  * as Paramspace from './paramspace';
+import  * as Priors from './priors';
 
 const models: tensorflow.Sequential[] = [];
 
 export { models };
-
-// module.exports = {
-//     Optimizer: require('./optimizer'),
-//     Paramspace: require('./paramspace'),
-//     Priors: require('./priors')
-// };
 
 /*
 var domain = [1,2,3];
