@@ -4,20 +4,16 @@
   "description": "Bayesian optimization of black-box functions.",
   "main": "index.js",
   "scripts": {
-    "build": "browserify index.js -o autotuner.js",
-    "test": "mocha --reporter spec"
+	"build": "tsc -p ./tsconfig.json",
+    "test": "mocha --reporter spec test"
   },
-  "keywords": [
-    "hyperparameter",
-    "bayesian",
-    "optimization"
-  ],
   "author": "Bojan Karlaš",
   "license": "MIT",
   "dependencies": {
     "deep-equal": "^1.0.1",
     "lodash": "^4.17.5",
-    "mathjs": "^4.1.2"
+    "mathjs": "^4.1.2",
+	"@tensorflow/tfjs": "^1.2.1"
   },
   "devDependencies": {
     "browserify": "^16.2.0",
