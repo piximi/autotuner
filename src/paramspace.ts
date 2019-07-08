@@ -1,48 +1,73 @@
-function Paramspace() {
-    this.models = {};
-    this.domain = [];
-    this.domainIndices = [];
-    this.modelsDomains = {};
-};
+import * as tensorflow from '@tensorflow/tfjs';
+import { ModelDict, ModelParameters, ModelMapping, ModelsDomain, Domain } from '../types/types';
 
-Paramspace.prototype.addModel = function (modelName, modelParameters) {
+type test = number;
 
-    // Add model to model collection.
-    this.models[modelName] = modelParameters;
+class Paramspace {
+    // 'modelDict': identifies a model by a unique number
+    modelDict: ModelDict;
 
-    // Expand model parameters.
-    var modelDomain = [modelParameters];
-    var newElements = false;
-    do {
+    // 'models': mapping from models to model parameter
+    models: ModelMapping;
 
-        var params = modelDomain.shift();
-        for (var key in params) {
-            if (params[key].constructor === Array) {
-                for (var i = 0; i < params[key].length; i++) {
-                    var p = JSON.parse(JSON.stringify(params));
-                    p[key] = params[key][i];
-                    modelDomain.push(p);
-                }
-                newElements = true;
-                break;
-            } else {
-                newElements = false;
-            }
-        }
-        if (newElements == false) {
-            modelDomain.unshift(params);
-        }
+    // 'domain': array of type {'model' : 'model1', 'params' : {'a' : 1, 'b' : 10}} where 'a' and 'b' are parameters
+    // i.e. all the 'points' from where we are searching for the best
+    domain: Domain[];
 
-    } while(newElements);
+    // 'domainIndices': array of domain indices
+    domainIndices: number[];
+    
+    // 'modelsDomains': mapping from the model identifier to the idecies of the models parameters in the domain
+    modelsDomains: ModelsDomain;
 
-    // Add indices of the model's domain section to the modelDomains object.
-    this.modelsDomains[modelName] = Array.from(new Array(modelDomain.length), (x,i) => i + this.domain.length);
+    constructor() {
+        this.modelDict = {};
+        this.models = {};
+        this.domain = [];
+        this.domainIndices = [];
+        this.modelsDomains = {};
+    }
 
-    // Extend the domain with new points defined by the model name and parameters.
-    this.domain = this.domain.concat(Array.from(modelDomain, (p) => {return {'model' : modelName, 'params' : p}}));
+    addSequentialModel (modelIdentifier: string, model: tensorflow.Sequential, modelParameters: ModelParameters) {
+        this.modelDict[modelIdentifier] = model;
 
-    // Create a list of domain indices. We can use them instead of object for faster operations.
-    this.domainIndices = Array.from(this.domain, (x,i) => i);
-};
+        // Add model to model collection.
+        this.models[modelIdentifier] = modelParameters;
+
+        // Expand model parameters.
+        let newElements = false;
+        const modelDomain = modelParameters;
+        // TODO: rewrite loop, fix types, define how models are added
+        // do {      
+        //     var params = modelDomain.shift();
+        //     for (var key in params) {
+        //         if (params[key].constructor === Array) {
+        //             for (var i = 0; i < params[key].length; i++) {
+        //                 var p = JSON.parse(JSON.stringify(params));
+        //                 p[key] = params[key][i];
+        //                 modelDomain.push(p);
+        //             }
+        //             newElements = true;
+        //             break;
+        //         } else {
+        //             newElements = false;
+        //         }
+        //     }
+        //     if (newElements == false) {
+        //         modelDomain.unshift(params);
+        //     }
+
+        // } while(newElements);
+
+        // Add indices of the model's domain section to the modelDomains object.
+        this.modelsDomains[modelIdentifier] = Array.from(new Array(modelDomain.length), (x,i) => i + Object.keys(this.domain).length);
+
+        // Extend the domain with new points defined by the model name and parameters.
+        this.domain = this.domain.concat(Array.from(modelDomain, (p) => {return {'model' : model, 'params' : p}}) as any);
+
+        // Create a list of domain indices. We can use them instead of object for faster operations.
+        this.domainIndices = Array.from(this.domain, (x,i) => i);
+    };
+}
 
 export { Paramspace };

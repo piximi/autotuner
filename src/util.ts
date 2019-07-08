@@ -6,7 +6,7 @@ import * as math from 'mathjs';
  * @param {Array.<number>} array Input array
  * @return {number} Index of array element with largest value
  */
-function argmax (array) {
+function argmax (array: number[]) {
     return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
 }
 
@@ -18,7 +18,9 @@ function argmax (array) {
  * @param {Array.<number>} std Standard deviation values of the probability distribution over a given domain.
  * @return {Array.<number>} Values of the expected improvement for all points of the mean and std.
  */
-function expectedImprovement (bestObjective, mean, std) {
+// TODO: change type of parameters, use math.matrix, adjust usages
+function expectedImprovement (bestObjective: any, mean: any, std: any) {
+    var mean, std: any;
 
     if (Array.isArray(mean)) {
         mean = math.matrix(mean)
@@ -29,7 +31,10 @@ function expectedImprovement (bestObjective, mean, std) {
 
     var gamma = math.dotDivide(math.subtract(mean, bestObjective), std);
 
-    var pdf = math.dotDivide(math.exp(math.dotDivide(math.square(gamma), -2)), math.sqrt(2 * 3.14159));
+    // FIXME: fix type errors for matrix operations
+    // @ts-ignore
+    var pdf: any = math.dotDivide(math.exp(math.dotDivide(math.square(gamma), -2)), math.sqrt(2 * 3.14159));
+    // @ts-ignore
     var cdf = math.dotDivide(math.add(math.erf(math.dotDivide(gamma, math.sqrt(2))), 1), 2);
 
     return math.dotMultiply(std, math.add(math.dotMultiply(gamma, cdf), pdf));

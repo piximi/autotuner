@@ -3,9 +3,7 @@ import  * as Optimizer from './optimizer';
 import  * as Paramspace from './paramspace';
 import  * as Priors from './priors';
 
-const models: tensorflow.Sequential[] = [];
-
-export { models };
+export { Optimizer, Paramspace, Priors };
 
 /*
 var domain = [1,2,3];
@@ -14,6 +12,29 @@ priors.commit({1:2});
 priors.commit({2:4});
 priors.commit({1:4, 2:5});
 console.log(priors.kernel);
+
+const model = await createModel(
+      numberOfClasses,
+      100,
+      lossFunction,
+      ['accuracy'],
+      optimizer
+    );
+
+model.compile({
+    loss: loss,
+    metrics: metrics,
+    optimizer: optimizer
+  });
+
+const args = {
+      batchSize: batchSize,
+      epochs: epochs,
+      verbose: 0
+    };
+
+Parameters are: lossFunction, optimizer e.g. adam, batchSize and epochs
+
 */
 
 /*

@@ -1,8 +1,9 @@
-'use strict';
+import * as math from 'mathjs';
+import * as expect from 'chai';
+import { Optimizer, Paramspace, Priors } from '../src/index';
 
-var autotuner = require('../index');
-var expect = require('chai').expect;
-var math = require('mathjs');
+// TODO: rewrite Tests in ts
+// TODO: make tests work with jest
 
 describe('#Optimizer', function () {
     it('should be initialized properly', function () {
@@ -15,7 +16,7 @@ describe('#Optimizer', function () {
         expect(optimizer.modelsDomains['a']).to.eql([1,2])
         expect(optimizer.modelsDomains['b']).to.eql([3,4,5])
     });
-    
+
     it('should be able to add a sample', function () {
         var domain = [1,2,3,4,5];
         var modelsDomains = {'a' : [0,1,2,3,4]};

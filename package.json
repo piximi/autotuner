@@ -10,9 +10,9 @@
   "author": "Bojan Karlaš",
   "license": "MIT",
   "dependencies": {
-    "deep-equal": "^1.0.1",
-    "lodash": "^4.17.5",
-    "mathjs": "^4.1.2",
+    "@types/deep-equal": "^1.0.1",
+    "@types/lodash": "^4.14.136",
+    "@types/mathjs": "^5.0.1",
 	"@tensorflow/tfjs": "^1.2.1"
   },
   "devDependencies": {
