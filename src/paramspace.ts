@@ -1,13 +1,8 @@
 import * as tensorflow from '@tensorflow/tfjs';
-import { ModelDict, ModelParameters, ModelMapping, ModelsDomain, Domain } from '../types/types';
-
-type test = number;
+import { StringModelParameters, ModelMapping, ModelsDomain, Domain } from '../types/types';
 
 class Paramspace {
-    // 'modelDict': identifies a model by a unique number
-    modelDict: ModelDict;
-
-    // 'models': mapping from models to model parameter
+    // 'models': mapping from a model to the parameters
     models: ModelMapping;
 
     // 'domain': array of type {'model' : 'model1', 'params' : {'a' : 1, 'b' : 10}} where 'a' and 'b' are parameters
@@ -17,34 +12,31 @@ class Paramspace {
     // 'domainIndices': array of domain indices
     domainIndices: number[];
     
-    // 'modelsDomains': mapping from the model identifier to the idecies of the models parameters in the domain
+    // 'modelsDomains': mapping from the model identifier to the indices of the models parameters in the domain
     modelsDomains: ModelsDomain;
 
     constructor() {
-        this.modelDict = {};
         this.models = {};
         this.domain = [];
         this.domainIndices = [];
         this.modelsDomains = {};
     }
 
-    addSequentialModel (modelIdentifier: string, model: tensorflow.Sequential, modelParameters: ModelParameters) {
-        this.modelDict[modelIdentifier] = model;
-
+    addlModel (modelIdentifier: string, modelParameters: StringModelParameters) {
         // Add model to model collection.
         this.models[modelIdentifier] = modelParameters;
-
+        
         // Expand model parameters.
-        let newElements = false;
-        const modelDomain = modelParameters;
-        // TODO: rewrite loop, fix types, define how models are added
-        // do {      
+        // TODO: fix type errors
+        var modelDomain = [modelParameters];
+        // var newElements = false;
+        // do {
         //     var params = modelDomain.shift();
-        //     for (var key in params) {
-        //         if (params[key].constructor === Array) {
+        //     for (var key in modelParameters) {
+        //         if (modelParameters[key].constructor === Array) {
         //             for (var i = 0; i < params[key].length; i++) {
         //                 var p = JSON.parse(JSON.stringify(params));
-        //                 p[key] = params[key][i];
+        //                 p[key] = modelParameters[key][i];
         //                 modelDomain.push(p);
         //             }
         //             newElements = true;
@@ -54,7 +46,7 @@ class Paramspace {
         //         }
         //     }
         //     if (newElements == false) {
-        //         modelDomain.unshift(params);
+        //         modelDomain.unshift(modelParameters);
         //     }
 
         // } while(newElements);
@@ -63,7 +55,7 @@ class Paramspace {
         this.modelsDomains[modelIdentifier] = Array.from(new Array(modelDomain.length), (x,i) => i + Object.keys(this.domain).length);
 
         // Extend the domain with new points defined by the model name and parameters.
-        this.domain = this.domain.concat(Array.from(modelDomain, (p) => {return {'model' : model, 'params' : p}}) as any);
+        this.domain = this.domain.concat(Array.from(modelDomain, (p) => {return {'model' : modelIdentifier, 'params' : p}}) as any);
 
         // Create a list of domain indices. We can use them instead of object for faster operations.
         this.domainIndices = Array.from(this.domain, (x,i) => i);

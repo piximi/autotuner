@@ -3,11 +3,16 @@ import * as tensorflow from '@tensorflow/tfjs';
 
 export type Model = tensorflow.Sequential;
 
+export type CreateModelFunction = (
+    classes: number,
+    units: number,
+    loss: string,
+    metrics: string[],
+    optimizer: tensorflow.Optimizer) => tensorflow.Sequential;
+
+export type DataSet = {trainingSet: tensorflow.Tensor<tensorflow.Rank>, evaluationSet: tensorflow.Tensor<tensorflow.Rank>, testSet: tensorflow.Tensor<tensorflow.Rank>}
+
 export type BaysianOptimisationStep = { nextPoint: number, expectedImprovement: number}
-
-export type ParameterNames = 'lossFunction' | 'optimizer' | 'batchSize' | 'epochs';
-
-export type ParameterTypes = number | string | tensorflow.Optimizer;
 
 export type LossFunction =
     'absoluteDifference' |
@@ -20,23 +25,17 @@ export type LossFunction =
     'softmaxCrossEntropy' |
     'categoricalCrossentropy';
 
-type LossFunctionParameter = { 'lossFunction' : LossFunction[]};
+export type StringModelParameter = { [identifier: string]: number[]};
 
-type OptimizerParameter = { 'optimizer' : tensorflow.Optimizer[]};
+export type SequentialModelParameters = { lossfunction: LossFunction[], optimizerAlgorith: tensorflow.Optimizer[], batchSize: number[], epochs: number[] };
 
-type BatchSizeParameter = { 'batchSize' : number[]};
+type StringParameters = { [parameterIdentifier: string]: number[] };
 
-type EpochsParameter = { 'epochs' : number[]};
+export type StringModelParameters = { modelIdentifier: string, stringParameters: StringParameters};
 
-export type Parameter = LossFunctionParameter | OptimizerParameter | BatchSizeParameter | EpochsParameter;
+export type ModelMapping = { [identifier: string] : StringModelParameters};
 
-export type ModelParameters = Parameter[];
-
-export type ParameteSample = { loss: LossFunction, optimizer: tensorflow.Optimizer, batchSize: number, epochs: number};
-
-export type ModelMapping = { [identifier: string] : ModelParameters};
-
-export type Domain = { [identifier: number] : ParameteSample};
+export type Domain = { [identifier: string] : StringParameters};
     
 export type ModelsDomain = { [identifier: string] : number[]};
 
