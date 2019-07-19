@@ -27,29 +27,29 @@ class Paramspace {
         this.models[modelIdentifier] = modelParameters;
         
         // Expand model parameters.
-        // TODO: fix type errors
-        var modelDomain = [modelParameters];
-        // var newElements = false;
-        // do {
-        //     var params = modelDomain.shift();
-        //     for (var key in modelParameters) {
-        //         if (modelParameters[key].constructor === Array) {
-        //             for (var i = 0; i < params[key].length; i++) {
-        //                 var p = JSON.parse(JSON.stringify(params));
-        //                 p[key] = modelParameters[key][i];
-        //                 modelDomain.push(p);
-        //             }
-        //             newElements = true;
-        //             break;
-        //         } else {
-        //             newElements = false;
-        //         }
-        //     }
-        //     if (newElements == false) {
-        //         modelDomain.unshift(modelParameters);
-        //     }
-
-        // } while(newElements);
+        var modelDomain: StringModelParameters[]= [modelParameters];
+        var newElements = false;
+        do {
+            var params = modelDomain.shift();
+            for (var key in params) {
+                if (params.stringParameters[key].constructor === Array) {
+                    for (var i = 0; i < params.stringParameters[key].length; i++) {
+                        var p = JSON.parse(JSON.stringify(params));
+                        p[key] = params.stringParameters[key][i];
+                        modelDomain.push(p);
+                    }
+                    newElements = true;
+                    break;
+                } else {
+                    newElements = false;
+                }
+            }
+            if (!newElements) {
+                if (params) {
+                    modelDomain.unshift(params);
+                }
+            }
+        } while(newElements);
 
         // Add indices of the model's domain section to the modelDomains object.
         this.modelsDomains[modelIdentifier] = Array.from(new Array(modelDomain.length), (x,i) => i + Object.keys(this.domain).length);
