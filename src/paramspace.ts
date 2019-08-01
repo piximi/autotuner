@@ -1,5 +1,4 @@
-import * as tensorflow from '@tensorflow/tfjs';
-import { StringModelParameters, ModelMapping, ModelsDomain, Domain } from '../types/types';
+import { StringParameters, ModelMapping, ModelsDomain, Domain } from '../types/types';
 
 class Paramspace {
     // 'models': mapping from a model to the parameters
@@ -22,37 +21,39 @@ class Paramspace {
         this.modelsDomains = {};
     }
 
-    addlModel (modelIdentifier: string, modelParameters: StringModelParameters) {
+    addModel (modelIdentifier: string, modelParameters: StringParameters) {
         // Add model to model collection.
         this.models[modelIdentifier] = modelParameters;
         
-        // Expand model parameters.
-        var modelDomain: StringModelParameters[]= [modelParameters];
-        var newElements = false;
-        do {
-            var params = modelDomain.shift();
-            for (var key in params) {
-                if (params.stringParameters[key].constructor === Array) {
-                    for (var i = 0; i < params.stringParameters[key].length; i++) {
-                        var p = JSON.parse(JSON.stringify(params));
-                        p[key] = params.stringParameters[key][i];
-                        modelDomain.push(p);
-                    }
-                    newElements = true;
-                    break;
-                } else {
-                    newElements = false;
-                }
+        var parameterValues = Object.values(modelParameters);
+        var parameterNames = Object.keys(modelParameters);
+        var numberOfParameters = parameterValues.length;
+
+        var ParametersCartesianProduct: number[][] = [[]];
+        for (let i = 0; i < numberOfParameters; i++) {
+            let currentSubArray = parameterValues[i];
+            let temp = [];
+            for (let j = 0; j < ParametersCartesianProduct.length; j++) {
+              for (let k = 0; k < currentSubArray.length; k++) {
+                temp.push(ParametersCartesianProduct[j].concat(currentSubArray[k]));
+              }
             }
-            if (!newElements) {
-                if (params) {
-                    modelDomain.unshift(params);
-                }
+            ParametersCartesianProduct = temp;
+        }
+
+        var modelDomain: [{ [name: string]: number}] = [{}];
+        for (let i = 0; i < ParametersCartesianProduct.length; i++) {
+            let tempModelParameter: { [parameterName: string]: number} = {};
+            for (let j = 0; j < numberOfParameters; j++) {
+                //Array.from(modelParameters, (p) => {return {'model' : modelIdentifier, 'params' : p}}) as any);
+                tempModelParameter[parameterNames[j]] = ParametersCartesianProduct[i][j];
             }
-        } while(newElements);
+            modelDomain.push(tempModelParameter);
+        }
 
         // Add indices of the model's domain section to the modelDomains object.
-        this.modelsDomains[modelIdentifier] = Array.from(new Array(modelDomain.length), (x,i) => i + Object.keys(this.domain).length);
+        var domainLength = Object.keys(this.domain).length;
+        this.modelsDomains[modelIdentifier] = Array.from(new Array(modelDomain.length), (x,i) => i + domainLength);
 
         // Extend the domain with new points defined by the model name and parameters.
         this.domain = this.domain.concat(Array.from(modelDomain, (p) => {return {'model' : modelIdentifier, 'params' : p}}) as any);

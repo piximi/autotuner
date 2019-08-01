@@ -1,5 +1,5 @@
 import equal from 'deep-equal';
-import difference from 'lodash/difference';
+//import difference from 'lodash/difference';
 import * as math from 'mathjs';
 import { argmax, expectedImprovement } from './util';
 import { BaysianOptimisationStep, ModelsDomain, NullableMatrix } from '../types/types';
@@ -67,7 +67,8 @@ class Optimizer {
         var modelExpectedImprovArray: number[] = [];
 
         // If the whole domain has aleady been sampled, the expected improvement is zero
-        if (difference(this.domainIndices, this.allSamples).length === 0) {
+        let unsampledDataPoints = this.domainIndices.filter(item => this.allSamples.indexOf(item) < 0);
+        if (unsampledDataPoints.length === 0) {
             return { nextPoint: 0, expectedImprovement: 0};
         }
 
@@ -108,7 +109,7 @@ class Optimizer {
         expectedImprov = math.zeros(domainSize) as math.Matrix;
         for (let model in this.modelsDomains) {
             // exclude obtained samples
-            var modelPoints = difference(this.modelsDomains[model], this.modelsSamples[model]);
+            var modelPoints = this.modelsDomains[model].filter(item => this.modelsSamples[model].indexOf(item) < 0);
             var modelPosteriorMean = posteriorMean.subset(math.index(modelPoints, 0));
             var modelPosteriorStd = posteriorStd.subset(math.index(modelPoints, 0));
             var modelExpectedImprov = expectedImprovement(modelsBestRewards[model], modelPosteriorMean, modelPosteriorStd) as math.Matrix;

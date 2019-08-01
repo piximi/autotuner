@@ -10,30 +10,33 @@ export type CreateModelFunction = (
     metrics: string[],
     optimizer: tensorflow.Optimizer) => tensorflow.Sequential;
 
-export type DataSet = {trainingSet: tensorflow.Tensor<tensorflow.Rank>, evaluationSet: tensorflow.Tensor<tensorflow.Rank>, testSet: tensorflow.Tensor<tensorflow.Rank>}
+export type datasetType = {data: tensorflow.Tensor<tensorflow.Rank>; lables: tensorflow.Tensor<tensorflow.Rank>}
+
+export type DataSet = {trainingSet: datasetType, evaluationSet: datasetType, testSet: datasetType}
 
 export type BaysianOptimisationStep = { nextPoint: number, expectedImprovement: number}
 
-export type LossFunction =
-    'absoluteDifference' |
-    'cosineDistance' |
-    'hingeLoss' |
-    'huberLoss' |
-    'logLoss' |
-    'meanSquaredError' |
-    'sigmoidCrossEntropy' |
-    'softmaxCrossEntropy' |
-    'categoricalCrossentropy';
+export enum LossFunction {
+    'absoluteDifference',
+    'cosineDistance',
+    'hingeLoss',
+    'huberLoss',
+    'logLoss',
+    'meanSquaredError',
+    'sigmoidCrossEntropy',
+    'softmaxCrossEntropy',
+    'categoricalCrossentropy',
+}
 
 export type StringModelParameter = { [identifier: string]: number[]};
 
-export type SequentialModelParameters = { lossfunction: LossFunction[], optimizerAlgorith: tensorflow.Optimizer[], batchSize: number[], epochs: number[] };
+export type SequentialModelParameters = { lossfunction: LossFunction[], optimizerAlgorith: any[], batchSize: number[], epochs: number[] };
 
-type StringParameters = { [parameterIdentifier: string]: number[] };
+export type StringParameters = { [parameterIdentifier: string]: number[] };
 
-export type StringModelParameters = { modelIdentifier: string, stringParameters: StringParameters};
+export type StringModelParameters = { [modelIdentifier: string]: StringParameters};
 
-export type ModelMapping = { [identifier: string] : StringModelParameters};
+export type ModelMapping = { [identifier: string] : StringParameters};
 
 export type Domain = { [identifier: string] : StringParameters};
     

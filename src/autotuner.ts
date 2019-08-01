@@ -1,14 +1,13 @@
 import * as tensorflow from '@tensorflow/tfjs';
-import { CreateModelFunction, LossFunction, DataSet, ModelDict, SequentialModelParameters } from '../types/types';
+import { CreateModelFunction, DataSet, ModelDict, SequentialModelParameters, datasetType } from '../types/types';
 import  * as optimizer from './optimizer';
 import  * as paramspace from './paramspace';
 import  * as priors from './priors';
 
 class AutotunerBaseClass {
-    dataset: DataSet;
+    dataset: any;
     metrics: string[] = [];
 
-    modelLossFunctionsDict: { [model: string]: LossFunction[] } = {};
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
 
     paramspace: any;
@@ -17,13 +16,12 @@ class AutotunerBaseClass {
 
     evaluateModel: (point: number) => number;
 
-    constructor(metrics: string[], trainingSet: tensorflow.Tensor<tensorflow.Rank>, testSet: tensorflow.Tensor<tensorflow.Rank>, evaluationSet: tensorflow.Tensor<tensorflow.Rank>) {
+    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType) {
         this.paramspace = new paramspace.Paramspace();
         this.metrics = metrics;
 
-        this.dataset.trainingSet = trainingSet;
-        this.dataset.testSet = testSet;
-        this.dataset.evaluationSet = evaluationSet;
+        const dataset: DataSet = {trainingSet: trainingSet, testSet: testSet, evaluationSet: evaluationSet};
+        this.dataset = dataset;
     }
 
     tuneHyperparameters(usePriorObservations: boolean = false) {
@@ -52,7 +50,7 @@ class AutotunerBaseClass {
 class TensorflowlModelAutotuner extends AutotunerBaseClass {
     modelDict: ModelDict = {};
 
-    constructor(metrics: string[], trainingSet: tensorflow.Tensor<tensorflow.Rank>, testSet: tensorflow.Tensor<tensorflow.Rank>, evaluationSet: tensorflow.Tensor<tensorflow.Rank>){
+    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType){
         super(metrics, trainingSet, testSet, evaluationSet);
         this.evaluateModel = (point: number) => { 
             // TODO: implement
@@ -62,18 +60,15 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
     addModel(modelIdentifier: string, model: tensorflow.Sequential, modelParameters: SequentialModelParameters) {
         this.modelDict[modelIdentifier] = model;
 
-        this.modelLossFunctionsDict[modelIdentifier] = modelParameters.lossfunction;
         this.modelOptimizersDict[modelIdentifier] = modelParameters.optimizerAlgorith;
-
-        const lossParameters = Array.from(modelParameters.lossfunction, (x,i) => i);
         const optimizerAlgorithParameters = Array.from(modelParameters.optimizerAlgorith, (x,i) => i);
 
         this.paramspace.addModel(modelIdentifier, {
-            'lossFunction' : lossParameters, 
+            'lossFunction' : modelParameters.lossfunction, 
             'optimizerFunction' : optimizerAlgorithParameters, 
             'batchSize' : modelParameters.batchSize, 
             'epochs' : modelParameters.epochs});
     }
 }
 
-export { TensorflowlModelAutotuner }
+export { AutotunerBaseClass, TensorflowlModelAutotuner }
