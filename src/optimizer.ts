@@ -1,5 +1,4 @@
 import equal from 'deep-equal';
-//import difference from 'lodash/difference';
 import * as math from 'mathjs';
 import { argmax, expectedImprovement } from './util';
 import { BaysianOptimisationStep, ModelsDomain, NullableMatrix } from '../types/types';
@@ -42,7 +41,6 @@ class Optimizer {
         }
     }
 
-
     addSample (point: number, value: number) {
         var pointIndex: number = this.domainIndices.findIndex((x: number) => equal(x, point));
 
@@ -69,7 +67,12 @@ class Optimizer {
         // If the whole domain has aleady been sampled, the expected improvement is zero
         let unsampledDataPoints = this.domainIndices.filter(item => this.allSamples.indexOf(item) < 0);
         if (unsampledDataPoints.length === 0) {
-            return { nextPoint: 0, expectedImprovement: 0};
+            return { nextPoint: 0, expectedImprovement: -2};
+        }
+
+        // if no samples have been added yet (e.g. call 'getNextPoint()' the first time) just pick anyone
+        if (this.allSamples.length === 0){
+            return { nextPoint: this.domainIndices[0], expectedImprovement: -1}
         }
 
         // Compute best rewards for each model.
@@ -83,6 +86,7 @@ class Optimizer {
         var sampleSize: number = this.allSamples.length;
         var sampleRewards: math.Matrix = math.matrix(Array.from(this.allSamples, (x: number) => this.observedValues[this.domainIndices[x]]));
         var samplePriorMean: math.Matrix = this.mean.subset(math.index(this.allSamples));
+
         var sampleKernel: math.Matrix = this.kernel.subset(math.index(this.allSamples, this.allSamples));
         var allToSampleKernel: math.Matrix = this.kernel.subset(math.index(math.range(0, domainSize), this.allSamples));
 
@@ -98,7 +102,10 @@ class Optimizer {
         var sampleKernelInv = math.inv(sampleKernel);
         var sampleRewardGain = math.reshape(math.subtract(sampleRewards, samplePriorMean) as math.Matrix, [sampleSize, 1]);
         var sampleKernelDotGain = math.multiply(sampleKernelInv, sampleRewardGain) as math.Matrix;
+        
         posteriorMean = math.add(math.multiply(allToSampleKernel, sampleKernelDotGain) as math.Matrix, math.reshape(this.mean, [domainSize, 1]) as math.Matrix) as math.Matrix;
+        // reshape the mean back to its original size
+        math.reshape(this.mean, [domainSize])
 
         var posteriorKernel = math.multiply(allToSampleKernel, math.multiply(sampleKernelInv, math.transpose(allToSampleKernel) as math.Matrix)) as math.Matrix;
         posteriorKernel = math.subtract(this.kernel, posteriorKernel) as math.Matrix;
@@ -113,22 +120,29 @@ class Optimizer {
             var modelPosteriorMean = posteriorMean.subset(math.index(modelPoints, 0));
             var modelPosteriorStd = posteriorStd.subset(math.index(modelPoints, 0));
             var modelExpectedImprov = expectedImprovement(modelsBestRewards[model], modelPosteriorMean, modelPosteriorStd) as math.Matrix;
-            modelExpectedImprov = math.reshape(modelExpectedImprov, [modelPoints.length]) as math.Matrix;
 
-            expectedImprov = expectedImprov.subset(math.index(modelPoints), math.add(expectedImprov.subset(math.index(modelPoints)), modelExpectedImprov)) as math.Matrix;
+            if (typeof(modelExpectedImprov) === 'number') {
+                // TODO: fix this corner case according to the regular case
+                // retrieve 'var improvement = math.add(expectedImprov.subset(math.index(modelPoints)), modelExpectedImprov);' as a number to avoid TypeError
+                expectedImprov = expectedImprov.subset(math.index(modelPoints), modelExpectedImprov) as math.Matrix;
+            } else {
+                modelExpectedImprov = math.reshape(modelExpectedImprov, [modelPoints.length]) as math.Matrix;
+                var improvement = math.add(expectedImprov.subset(math.index(modelPoints)), modelExpectedImprov);
+                expectedImprov = expectedImprov.subset(math.index(modelPoints), improvement) as math.Matrix;
+            }
         }
 
         for (var i = 0; i < this.allSamples.length; i++) {
             modelExpectedImprovArray[this.allSamples[i]] = 0;
         }
-        
+
         var domain: number[] = [];
-        for (let k in Object.keys(this.modelsDomains)) {
-            domain.concat(this.modelsDomains[k])
+        for (let k in this.modelsDomains) {
+            domain = domain.concat(this.modelsDomains[k])
         }
 
         // Sample the point with maximal expected improvement over the given domain.
-        var idx = argmax(math.subset(expectedImprov, math.index(domain)) as number[]);
+        var idx = argmax(math.subset(expectedImprov.toArray(), math.index(domain)) as number[]);
 
         // return the point with the biggest expected improvement as well as the expexted improvement
         const baysianOptimisationStep: BaysianOptimisationStep = { nextPoint: this.domainIndices[domain[idx]], expectedImprovement: modelExpectedImprovArray[idx]}

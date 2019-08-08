@@ -19,8 +19,9 @@ function argmax (array: number[]) {
  * @return {Array.<number>} Values of the expected improvement for all points of the mean and std.
  */
 // TODO: change type of parameters, use math.matrix, adjust usages
-function expectedImprovement (bestObjective: any, mean: any, std: any) {
-    var mean, std: any;
+function expectedImprovement (bestObjective: number, mean: math.Matrix, std: math.Matrix) {
+    var mean: math.Matrix;
+    var std: math.Matrix;
 
     if (Array.isArray(mean)) {
         mean = math.matrix(mean)
@@ -37,7 +38,7 @@ function expectedImprovement (bestObjective: any, mean: any, std: any) {
     // @ts-ignore
     var cdf = math.dotDivide(math.add(math.erf(math.dotDivide(gamma, math.sqrt(2))), 1), 2);
 
-    return math.dotMultiply(std, math.add(math.dotMultiply(gamma, cdf), pdf));
+    return math.dotMultiply(std, math.add(math.dotMultiply(gamma, cdf), pdf)) as math.Matrix;
 }
 
 export { argmax, expectedImprovement };
