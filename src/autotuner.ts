@@ -1,8 +1,9 @@
 import * as tensorflow from '@tensorflow/tfjs';
 import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction } from '../types/types';
-import  * as optimizer from './optimizer';
-import  * as paramspace from './paramspace';
-import  * as priors from './priors';
+import * as bayesianOptimizer from './bayesianOptimizer';
+import * as gridSearchOptimizer from './gridSearchOptimizer';
+import * as paramspace from './paramspace';
+import * as priors from './priors';
 
 class AutotunerBaseClass {
     dataset: DataSet;
@@ -24,12 +25,23 @@ class AutotunerBaseClass {
         this.dataset = dataset;
     }
 
-    async tuneHyperparameters(usePriorObservations: boolean = false) {
+    async tuneHyperparameters(optimizer: string, usePriorObservations: boolean = false) {
         if (!usePriorObservations || !this.priors) {
             this.priors = new priors.Priors(this.paramspace.domainIndices);
         }
-        this.optimizer = new optimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
 
+        if (optimizer === 'bayesian') {
+            this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
+        } else if (optimizer === 'gridSearch') {
+            this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
+        } else {
+            console.log("ileagal argument for parameter 'optimizer'");
+            console.log("'optimizer' must either be 'bayesian' or 'gridSearch'");
+            return;
+        }
+
+        console.log("============================");
+        console.log("start tuning the hyperparameters");
         let optimizing = true;
         while (optimizing) {
             // get the next point to evaluate from the optimizer
@@ -49,6 +61,8 @@ class AutotunerBaseClass {
             // keep observations for the next optimization run
             this.priors.commit(this.paramspace.observedValues);
         }
+        console.log("============================");
+        console.log("finished tuning the hyperparameters");
     }
 }
 
