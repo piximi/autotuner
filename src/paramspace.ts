@@ -50,6 +50,7 @@ class Paramspace {
             }
             modelDomain.push(tempModelParameter);
         }
+        modelDomain.shift();
 
         // Add indices of the model's domain section to the modelDomains object.
         var domainLength = Object.keys(this.domain).length;

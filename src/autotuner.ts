@@ -1,11 +1,11 @@
 import * as tensorflow from '@tensorflow/tfjs';
-import { CreateModelFunction, DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep } from '../types/types';
+import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction } from '../types/types';
 import  * as optimizer from './optimizer';
 import  * as paramspace from './paramspace';
 import  * as priors from './priors';
 
 class AutotunerBaseClass {
-    dataset: any;
+    dataset: DataSet;
     metrics: string[] = [];
 
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
@@ -14,7 +14,7 @@ class AutotunerBaseClass {
     optimizer: any;
     priors: any;
 
-    evaluateModel: (domainIndex: number) => number;
+    evaluateModel: (domainIndex: number) => Promise<number>;
 
     constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType) {
         this.paramspace = new paramspace.Paramspace();
@@ -24,7 +24,7 @@ class AutotunerBaseClass {
         this.dataset = dataset;
     }
 
-    tuneHyperparameters(usePriorObservations: boolean = false) {
+    async tuneHyperparameters(usePriorObservations: boolean = false) {
         if (!usePriorObservations || !this.priors) {
             this.priors = new priors.Priors(this.paramspace.domainIndices);
         }
@@ -41,7 +41,7 @@ class AutotunerBaseClass {
             }
             
             // Train a model given the params and obtain a quality metric value.
-            var value = this.evaluateModel(nextOptimizationPoint.nextPoint);
+            var value = await this.evaluateModel(nextOptimizationPoint.nextPoint);
             
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
@@ -55,18 +55,41 @@ class AutotunerBaseClass {
 class TensorflowlModelAutotuner extends AutotunerBaseClass {
     modelDict: ModelDict = {};
 
-    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType){
+    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType) {
         super(metrics, trainingSet, testSet, evaluationSet);
-        this.evaluateModel = (point: number) => { 
-            // TODO: implement
-            return 2};
+
+        this.evaluateModel = async (point: number) => {
+            const modelIdentifier = this.paramspace.domain[point]['model'];
+            const model = this.modelDict[modelIdentifier];
+            const params = this.paramspace.domain[point]['params'];
+
+            const args = {
+                batchSize: params["batchSize"],
+                epochs: params["epochs"]
+            };
+
+
+            const optimizerFunction = this.modelOptimizersDict[modelIdentifier][params["optimizerFunction"]];
+            model.compile({
+                loss: LossFunction[params["lossFunction"]],
+                metrics: metrics,
+                optimizer: optimizerFunction
+            });
+          
+            await model.fit(this.dataset.trainingSet.data, this.dataset.trainingSet.lables, args);
+
+            const evaluationResult = model.evaluate(this.dataset.testSet.data, this.dataset.testSet.lables) as tensorflow.Tensor[];
+            const score = evaluationResult[1].dataSync()[0];
+
+            return score;
+        }
     }
 
     addModel(modelIdentifier: string, model: tensorflow.Sequential, modelParameters: SequentialModelParameters) {
         this.modelDict[modelIdentifier] = model;
 
-        this.modelOptimizersDict[modelIdentifier] = modelParameters.optimizerAlgorith;
-        const optimizerAlgorithParameters = Array.from(modelParameters.optimizerAlgorith, (x,i) => i);
+        this.modelOptimizersDict[modelIdentifier] = modelParameters.optimizerAlgorithm;
+        const optimizerAlgorithParameters = Array.from(modelParameters.optimizerAlgorithm, (x,i) => i);
 
         this.paramspace.addModel(modelIdentifier, {
             'lossFunction' : modelParameters.lossfunction, 

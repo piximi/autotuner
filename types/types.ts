@@ -3,13 +3,6 @@ import * as tensorflow from '@tensorflow/tfjs';
 
 export type Model = tensorflow.Sequential;
 
-export type CreateModelFunction = (
-    classes: number,
-    units: number,
-    loss: string,
-    metrics: string[],
-    optimizer: tensorflow.Optimizer) => tensorflow.Sequential;
-
 export type datasetType = {data: tensorflow.Tensor<tensorflow.Rank>; lables: tensorflow.Tensor<tensorflow.Rank>}
 
 export type DataSet = {trainingSet: datasetType, evaluationSet: datasetType, testSet: datasetType}
@@ -30,7 +23,7 @@ export enum LossFunction {
 
 export type StringModelParameter = { [identifier: string]: number[]};
 
-export type SequentialModelParameters = { lossfunction: LossFunction[], optimizerAlgorith: any[], batchSize: number[], epochs: number[] };
+export type SequentialModelParameters = { lossfunction: LossFunction[], optimizerAlgorithm: any[], batchSize: number[], epochs: number[] };
 
 export type StringParameters = { [parameterIdentifier: string]: number[] };
 
