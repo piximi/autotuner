@@ -41,7 +41,7 @@ class AutotunerBaseClass {
         }
 
         console.log("============================");
-        console.log("start tuning the hyperparameters");
+        console.log("tuning the hyperparameters");
         let optimizing = true;
         while (optimizing) {
             // get the next point to evaluate from the optimizer
@@ -57,10 +57,10 @@ class AutotunerBaseClass {
             
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
-
-            // keep observations for the next optimization run
-            this.priors.commit(this.paramspace.observedValues);
         }
+        // keep observations for the next optimization run
+        this.priors.commit(this.paramspace.observedValues);
+        
         console.log("============================");
         console.log("finished tuning the hyperparameters");
     }

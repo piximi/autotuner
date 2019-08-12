@@ -3,31 +3,37 @@
   "version": "0.1.0",
   "description": "Bayesian optimization of black-box functions.",
   "main": "index.js",
+  "license": "BSD-3-Clause",
+  "homepage": "https://github.com/piximi/autotuner",
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
-    "test": "mocha --reporter spec test"
+    "test": "jest ./tests",
+    "runExampleAutotuner": "tsc -p ./tsconfig.json && ts-node tests\\runExampleAutotuner.ts"
   },
-  "author": "Bojan Karlaš",
-  "license": "MIT",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "contributors": [
+    "Levin Moser",
+    "Bojan Karlaš"
+  ],
   "dependencies": {
     "@piximi/types": "^0.1.8",
     "@tensorflow/tfjs": "^1.2.1",
     "@types/deep-equal": "^1.0.1",
-    "@types/jquery": "^3.3.30",
-    "@types/lodash": "^4.14.136",
     "@types/mathjs": "^5.0.1",
-    "canvas": "^2.5.0",
-    "deep-equal": "^1.0.1",
-    "fs": "^0.0.1-security",
-    "image-js": "^0.21.6"
+    "babel-jest": "^24.8.0",
+    "canvas": "^2.5.0"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.17",
     "@types/node": "^12.6.8",
-    "browserify": "^16.2.0",
-    "chai": "^4.1.2",
-    "mocha": "^5.1.1",
+    "fs": "^0.0.1-security",
+    "image-js": "^0.21.6",
+    "jest": "^24.8.0",
+    "ts-jest": "^24.0.2",
     "ts-node": "^8.3.0",
-    "typescript": "^3.5.3",
-    "uglify-js": "^3.3.22"
+    "typescript": "^3.5.3"
   }
 }

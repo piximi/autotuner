@@ -1,4 +1,3 @@
-import equal from 'deep-equal';
 import { BaysianOptimisationStep, ModelsDomain, NullableMatrix } from '../types/types';
 
 class Optimizer {
@@ -27,10 +26,10 @@ class Optimizer {
 
 
     addSample (point: number, value: number) {
-        var pointIndex: number = this.domainIndices.findIndex((x: number) => equal(x, point));
+        var pointIndex: number = this.domainIndices.findIndex((x: number) => (x === point));
 
         for (var model in this.modelsDomains) {
-            if (this.modelsDomains[model].findIndex((x: number) => equal(x, point)) >= 0) {
+            if (this.modelsDomains[model].findIndex((x: number) => (x === point)) >= 0) {
                 this.modelsSamples[model] = this.modelsSamples[model].concat([pointIndex]);
             }
         }

@@ -1,5 +1,5 @@
-import equal from 'deep-equal';
 import * as math from 'mathjs';
+import { equal } from './util';
 
 class Priors {
     domainIndices: number[];
@@ -12,7 +12,7 @@ class Priors {
         this.domainIndices = domainIndices
         this.observedValues = {}
 
-        var domainSize: number = Object.keys(this.domainIndices).length + 1;
+        var domainSize: number = Object.keys(this.domainIndices).length;
         for (var i=0; i < domainSize; i++) {
             this.observedValues[domainIndices[i]] = [];
         }
@@ -21,7 +21,7 @@ class Priors {
     }
 
     commit (observedValues: {[identifier: number]: number}) {
-        var domainSize: number = Object.keys(this.domainIndices).length + 1;
+        var domainSize: number = Object.keys(this.domainIndices).length;
 
         for (var point in observedValues) {
             this.observedValues[point].push(observedValues[point]);

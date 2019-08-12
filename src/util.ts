@@ -6,7 +6,7 @@ import * as math from 'mathjs';
  * @param {Array.<number>} array Input array
  * @return {number} Index of array element with largest value
  */
-function argmax (array: number[]) {
+const argmax = (array: number[]) => {
     return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
 }
 
@@ -19,7 +19,7 @@ function argmax (array: number[]) {
  * @return {Array.<number>} Values of the expected improvement for all points of the mean and std.
  */
 // TODO: change type of parameters, use math.matrix, adjust usages
-function expectedImprovement (bestObjective: number, mean: math.Matrix, std: math.Matrix) {
+const expectedImprovement = (bestObjective: number, mean: math.Matrix, std: math.Matrix) => {
     var mean: math.Matrix;
     var std: math.Matrix;
 
@@ -41,4 +41,8 @@ function expectedImprovement (bestObjective: number, mean: math.Matrix, std: mat
     return math.dotMultiply(std, math.add(math.dotMultiply(gamma, cdf), pdf)) as math.Matrix;
 }
 
-export { argmax, expectedImprovement };
+const equal = (a: number, b: string): boolean => {
+    return (b === a.toString());
+}
+
+export { argmax, expectedImprovement, equal };

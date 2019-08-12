@@ -1,74 +1,45 @@
 # autotuner
-Hyperparameter search module for tensorflow.js (sequential) models
-The following parameters are autotuned: lossFunction, optimizer e.g. adam, batchSize and epochs
-The Autotuner is given a metric (e.g. accuracy) and a dataset
-
-# Getting Started
-
-```javascript
-import * as autotuner from '@piximi/autotuner';
-```
+Hyperparameter search module for tensorflow.js (sequential) models.  
+The following parameters are autotuned: lossFunction, optimizer algorithm, batchSize and epochs
 
 # Usage
 
-We first define the parameter space. It is done with the `Paramspace` class. We add models to it by calling `addModel(modelName, modelParameters)` where `modelName` is a string model identifier, and `modelParameters` is an object where fields are parameter names and values are lists of possible parameter values.
-
-Here is an example:
 ```javascript
-var p = new autotuner.Paramspace();
-p.addModel('model1', {'param1' : [1,2,3], 'param2' : 10});
-p.addModel('model2', {'param3' : [5,10,15]});
+import { TensorflowlModelAutotuner } from '@piximi/autotuner';
 ```
 
-Then we use the parameter space to initialize the optimizer:
+### Getting Started
+
+Initialize the autotuner by specifying metrics and a dataset.
 ```javascript
-// Initialize the optimizer with the parameter space.
-var opt = new autotuner.Optimizer(p.domainIndices, p.modelsDomains);
-
-while (optimizing) {
-    // Take a suggestion from the optimizer.
-    var point = opt.getNextPoint();
-    
-    // We can extract the model name and parameters.
-    var model = p.domain[point]['model'];
-    var params = p.domain[point]['params'];
-    
-    // Train a model given the params and obtain a quality metric value.
-    // ...
-    
-    // Report the obtained quality metric value.
-    p.addSample(point, value);
-}
-
+var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.trainData, dataset.testData, dataset.validationData);
 ```
-## Transfer learning
-
-If we want to take advantage of the observed values from the previous optimization runs to improve our next optimization run, we need the `Priors` helper class.
+### Adding a model to the autotuner
 ```javascript
-// This object is created only once and kept across optimization runs.
-var priors = new autotuner.Priors(p.domainIndices);
+// create some uncompiled sequential tensorflow model
+const testModel = await createModel();
+
+const parameters = { lossfunction: [LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta()], batchSize: [10], epochs: [5,10] };
+autotuner.addModel('testModel', testModel, parameters);
 ```
-We then use this class in our optimization runs as follows:
+
+### Tuning the hyperparameters
+Specify the optimization algorith. The hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search. 
 ```javascript
-// Use the mean and kernel from the Priors instance to
-// initialize the optimizer. 
-var opt = new autotuner.Optimizer(p.domainIndices, p.modelsDomains, priors.mean, priors.kernel);
-
-// Regular optimization run.
-while (optimizing) {
-    var point = opt.getNextPoint();
-    var model = p.domain[point]['model'];
-    var params = p.domain[point]['params'];
-    // ...
-    p.addSample(point, value);
-}
-
-// Commit the observed points to the priors.
-priors.commit(p.observedValues);
+autotuner.tuneHyperparameters("bayesian");
 ```
-After commiting the observed values, the `priors.mean` and `priors.kernel` are updated with the observed values so we can use them to initialize the next optimization run.
+```javascript
+autotuner.tuneHyperparameters("gridSearch");
+```
+The autotuner can reuse the observations collected on a previous optimization run.
+```javascript
+autotuner.tuneHyperparameters("bayesian", true);
+```
 
-
+An example usage can be found here:
+```bash
+tets/runExampleAutotuner.ts
+```
 # Development
 
 Pull and initialize:
@@ -87,4 +58,3 @@ To compile the code and check for type errors:
 ```bash
 npm build
 ```
-
