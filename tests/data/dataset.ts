@@ -44,7 +44,7 @@ export const createTestDataset = async (
     categories
   );
 
-  return { trainData: trainDataSet, testData: testDataSet, validationData: validationDataSet };
+  return { trainData: trainDataSet, testData: testDataSet, validationData: validationDataSet, numberOfCategories:  categories.length - 1};
 };
 
 const findCategoryIndex = (
@@ -73,7 +73,7 @@ const createLabledTensorflowDataSet = async (
   categories: Category[]
 ) => {
   let tensorData: tensorflow.Tensor<tensorflow.Rank>[] = [];
-  let tensorLables: any = [];
+  let tensorLables: number[] = [];
 
   for (const image of labledData) {
     tensorData.push(await tensorImageData(image));
@@ -82,12 +82,6 @@ const createLabledTensorflowDataSet = async (
     );
   }
 
-  let concatenatedTensorData = tensorflow.tidy(() =>
-    tensorflow.concat(tensorData)
-  );
-  let concatenatedLableData = tensorflow.tidy(() =>
-    tensorflow.oneHot(tensorLables, categories.length - 1)
-  );
-
-  return { data: concatenatedTensorData, lables: concatenatedLableData };
+  //return { data: concatenatedTensorData, lables: concatenatedLableData };
+  return { data: tensorData, lables: tensorLables };
 };

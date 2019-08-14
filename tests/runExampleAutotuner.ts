@@ -11,7 +11,7 @@ const runExampleAutotuner = async () => {
 
         const dataset = await createTestDataset(classifier.categories, classifier.images);
 
-        var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.trainData, dataset.testData, dataset.validationData);
+        var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.trainData, dataset.testData, dataset.validationData, dataset.numberOfCategories);
         
         const testModel = await createModel();
 

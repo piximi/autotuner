@@ -17,11 +17,11 @@ class AutotunerBaseClass {
 
     evaluateModel: (domainIndex: number) => Promise<number>;
 
-    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType) {
+    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType, numberOfCategories: number) {
         this.paramspace = new paramspace.Paramspace();
         this.metrics = metrics;
 
-        const dataset: DataSet = {trainingSet: trainingSet, testSet: testSet, evaluationSet: evaluationSet};
+        const dataset: DataSet = {trainingSet: trainingSet, testSet: testSet, evaluationSet: evaluationSet, numberOfCategories: numberOfCategories};
         this.dataset = dataset;
     }
 
@@ -69,8 +69,8 @@ class AutotunerBaseClass {
 class TensorflowlModelAutotuner extends AutotunerBaseClass {
     modelDict: ModelDict = {};
 
-    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType) {
-        super(metrics, trainingSet, testSet, evaluationSet);
+    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType, numberOfCategories: number) {
+        super(metrics, trainingSet, testSet, evaluationSet, numberOfCategories);
 
         this.evaluateModel = async (point: number) => {
             const modelIdentifier = this.paramspace.domain[point]['model'];
@@ -90,9 +90,13 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
                 optimizer: optimizerFunction
             });
           
-            await model.fit(this.dataset.trainingSet.data, this.dataset.trainingSet.lables, args);
+            let concatenatedTensorTrainData = tensorflow.tidy(() => tensorflow.concat(this.dataset.trainingSet.data));
+            let concatenatedTrainLableData = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
+            await model.fit(concatenatedTensorTrainData, concatenatedTrainLableData, args);
 
-            const evaluationResult = model.evaluate(this.dataset.testSet.data, this.dataset.testSet.lables) as tensorflow.Tensor[];
+            let concatenatedTensorTestData = tensorflow.tidy(() => tensorflow.concat(this.dataset.trainingSet.data));
+            let concatenatedTestLables = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
+            const evaluationResult = model.evaluate(concatenatedTensorTestData, concatenatedTestLables) as tensorflow.Tensor[];
             const score = evaluationResult[1].dataSync()[0];
 
             return score;
