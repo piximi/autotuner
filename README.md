@@ -26,14 +26,14 @@ autotuner.addModel('testModel', testModel, parameters);
 ### Tuning the hyperparameters
 Specify the optimization algorith. The hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search. 
 ```javascript
-autotuner.tuneHyperparameters("bayesian");
+autotuner.bayesianOptimization();
 ```
 ```javascript
-autotuner.tuneHyperparameters("gridSearch");
+autotuner.gridSearchOptimizytion();
 ```
 The autotuner can reuse the observations collected on a previous optimization run.
 ```javascript
-autotuner.tuneHyperparameters("bayesian", true);
+autotuner.bayesianOptimization(true);
 ```
 
 An example usage can be found here:

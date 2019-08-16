@@ -18,7 +18,7 @@ const runExampleAutotuner = async () => {
         const parameters = { lossfunction: [LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta()], batchSize: [10], epochs: [5,10] };
         autotuner.addModel('testModel', testModel, parameters);
 
-        autotuner.tuneHyperparameters("bayesian", true);
+        autotuner.bayesianOptimization(true);
 };
 
 runExampleAutotuner();

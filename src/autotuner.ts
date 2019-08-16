@@ -1,4 +1,5 @@
 import * as tensorflow from '@tensorflow/tfjs';
+import * as math from 'mathjs';
 import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction } from '../types/types';
 import * as bayesianOptimizer from './bayesianOptimizer';
 import * as gridSearchOptimizer from './gridSearchOptimizer';
@@ -8,6 +9,7 @@ import * as priors from './priors';
 class AutotunerBaseClass {
     dataset: DataSet;
     metrics: string[] = [];
+    scores: number[] = [];
 
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
 
@@ -25,21 +27,48 @@ class AutotunerBaseClass {
         this.dataset = dataset;
     }
 
-    async tuneHyperparameters(optimizer: string, usePriorObservations: boolean = false) {
+    /**
+     * Decide whether to continue tuning the hyperparameters.
+     * Stop tuning the hyperparameters if more than 75% of the domain has been evaluated.
+     * 
+     * @return {number} false if tuning the hyperparameters should be stopped, true otherwise
+     */
+    optimizingParameters: () => boolean;
+
+    initializePriors(usePriorObservations: boolean = false){
         if (!usePriorObservations || !this.priors) {
             this.priors = new priors.Priors(this.paramspace.domainIndices);
         }
+    }
 
-        if (optimizer === 'bayesian') {
-            this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
-        } else if (optimizer === 'gridSearch') {
-            this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
-        } else {
-            console.log("ileagal argument for parameter 'optimizer'");
-            console.log("'optimizer' must either be 'bayesian' or 'gridSearch'");
-            return;
+    async bayesianOptimization(usePriorObservations: boolean = false) {
+        this.initializePriors(usePriorObservations);
+        this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
+        this.optimizingParameters = () => {
+            const domainSize = this.paramspace.domainIndices.length;
+            var fractionOfEvaluatedPoints = math.floor(this.scores.length / domainSize);
+    
+            if (fractionOfEvaluatedPoints > 0.75) {
+                return false;
+            }
+            return true;
         }
 
+        this.tuneHyperparameters(usePriorObservations);
+    }
+
+    async gridSearchOptimizytion(usePriorObservations: boolean = false) {
+        this.initializePriors(usePriorObservations);
+        this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
+        this.optimizingParameters = () => {
+            return true;
+        }
+
+        this.tuneHyperparameters(usePriorObservations);
+    }
+
+
+    async tuneHyperparameters(usePriorObservations: boolean = false) {
         console.log("============================");
         console.log("tuning the hyperparameters");
         let optimizing = true;
@@ -57,6 +86,8 @@ class AutotunerBaseClass {
             
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
+
+            optimizing = this.optimizingParameters();
         }
         // keep observations for the next optimization run
         this.priors.commit(this.paramspace.observedValues);
@@ -97,8 +128,10 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
             let concatenatedTensorTestData = tensorflow.tidy(() => tensorflow.concat(this.dataset.trainingSet.data));
             let concatenatedTestLables = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
             const evaluationResult = model.evaluate(concatenatedTensorTestData, concatenatedTestLables) as tensorflow.Tensor[];
-            const score = evaluationResult[1].dataSync()[0];
 
+            const score = evaluationResult[1].dataSync()[0];
+            // keep track of the scores
+            this.scores.push(score);
             return score;
         }
     }
