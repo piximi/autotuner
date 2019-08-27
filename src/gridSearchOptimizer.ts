@@ -43,12 +43,6 @@ class Optimizer {
     };
 
     getNextPoint () {
-        // If the whole domain has aleady been sampled, the expected improvement is zero
-        let unsampledDataPoints = this.domainIndices.filter(item => this.allSamples.indexOf(item) < 0);
-        if (unsampledDataPoints.length === 0) {
-            return { nextPoint: 0, expectedImprovement: 0};
-        }
-
         // if no samples have been added yet (e.g. call 'getNextPoint()' the first time) just pick anyone
         if (this.allSamples.length === 0){
             return { nextPoint: this.domainIndices[0], expectedImprovement: -1}

@@ -1,6 +1,6 @@
 import * as tensorflow from '@tensorflow/tfjs';
 import * as math from 'mathjs';
-import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction } from '../types/types';
+import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction, DomainPointValue } from '../types/types';
 import * as bayesianOptimizer from './bayesianOptimizer';
 import * as gridSearchOptimizer from './gridSearchOptimizer';
 import * as paramspace from './paramspace';
@@ -9,15 +9,53 @@ import * as priors from './priors';
 class AutotunerBaseClass {
     dataset: DataSet;
     metrics: string[] = [];
-    scores: number[] = [];
-
+    observedValues: DomainPointValue[] = [];
+    /**
+     * Fraction of domain indices that should be evaluated at most
+     */
+    maxIterations: number;
+    /**
+     * Predicate that iterates over the observed values and determines wheter or not to stop the tuning of hyperparameters
+     * 
+     * @return {boolean} false if tuning the hyperparameters should be stopped, true otherwise
+     */
+    metricsStopingCriteria: (observedValues: DomainPointValue[]) => boolean;
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
-
     paramspace: any;
     optimizer: any;
     priors: any;
 
+    /**
+     * Returns the value of a domain point.
+     * 
+     * @param {number} domainIndex Index of the domain point to be evaluated.
+     * @return {Promise<number>} Value of the domain point
+     */
     evaluateModel: (domainIndex: number) => Promise<number>;
+
+    /**
+     * Decide whether to continue tuning the hyperparameters.
+     * Stop tuning the parameters if either the maximun muber of iterations has been reached or if 'metricsStopingCriteria' returns false
+     * 
+     * @return {boolean} false if tuning the hyperparameters should be stopped, true otherwise
+     */
+    stopingCriteria() {
+        const domainSize = this.paramspace.domainIndices.length;
+        const numberOfObservedValues = this.observedValues.length;
+        var fractionOfEvaluatedPoints = numberOfObservedValues / domainSize;
+        var maxIterationsReached: boolean = fractionOfEvaluatedPoints <= this.maxIterations;
+
+        if (this.metricsStopingCriteria) {
+            return maxIterationsReached || this.metricsStopingCriteria(this.observedValues);
+        }
+        return maxIterationsReached;
+    }
+
+    initializePriors() {
+        if (!this.priors) {
+            this.priors = new priors.Priors(this.paramspace.domainIndices);
+        }
+    }
 
     constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType, numberOfCategories: number) {
         this.paramspace = new paramspace.Paramspace();
@@ -28,58 +66,42 @@ class AutotunerBaseClass {
     }
 
     /**
-     * Decide whether to continue tuning the hyperparameters.
-     * Stop tuning the hyperparameters if more than 75% of the domain has been evaluated.
+     * Search the best Parameters using bayesian optimization.
      * 
-     * @return {number} false if tuning the hyperparameters should be stopped, true otherwise
+     * @param {number} [maxIteration=0.75] Fraction of domain points that should be evaluated at most. (e.g. for 'maxIteration=0.75' the optimization stops if 75% of the domain has been evaluated)
+     * @param {boolean} [stopingCriteria] Predicate on the observed values when to stop the optimization
      */
-    optimizingParameters: () => boolean;
-
-    initializePriors(usePriorObservations: boolean = false){
-        if (!usePriorObservations || !this.priors) {
-            this.priors = new priors.Priors(this.paramspace.domainIndices);
-        }
-    }
-
-    async bayesianOptimization(usePriorObservations: boolean = false) {
-        this.initializePriors(usePriorObservations);
+    async bayesianOptimization(maxIteration: number = 0.75, stopingCriteria?: ((observedValues: DomainPointValue[]) => boolean)) {
+        this.initializePriors();
         this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
-        this.optimizingParameters = () => {
-            const domainSize = this.paramspace.domainIndices.length;
-            var fractionOfEvaluatedPoints = math.floor(this.scores.length / domainSize);
-    
-            if (fractionOfEvaluatedPoints > 0.75) {
-                return false;
-            }
-            return true;
+        this.maxIterations = maxIteration;
+        if (stopingCriteria) {
+            this.metricsStopingCriteria = stopingCriteria;
         }
-
-        this.tuneHyperparameters(usePriorObservations);
+        
+        this.tuneHyperparameters();
     }
 
-    async gridSearchOptimizytion(usePriorObservations: boolean = false) {
-        this.initializePriors(usePriorObservations);
+    /**
+     * Search the best Parameters using grid search.
+     */
+    async gridSearchOptimizytion() {
+        this.initializePriors();
         this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
-        this.optimizingParameters = () => {
-            return true;
-        }
+        this.maxIterations = 1;
 
-        this.tuneHyperparameters(usePriorObservations);
+        this.tuneHyperparameters();
     }
 
 
-    async tuneHyperparameters(usePriorObservations: boolean = false) {
+    async tuneHyperparameters() {
         console.log("============================");
         console.log("tuning the hyperparameters");
+
         let optimizing = true;
         while (optimizing) {
             // get the next point to evaluate from the optimizer
             var nextOptimizationPoint: BaysianOptimisationStep = this.optimizer.getNextPoint();
-
-            // check if 'expectedImprovement' === -2, if so there are no more points to evaluate
-            if (nextOptimizationPoint.expectedImprovement === -2) {
-                break;
-            }
             
             // Train a model given the params and obtain a quality metric value.
             var value = await this.evaluateModel(nextOptimizationPoint.nextPoint);
@@ -87,7 +109,8 @@ class AutotunerBaseClass {
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
 
-            optimizing = this.optimizingParameters();
+            optimizing = this.stopingCriteria();
+            
         }
         // keep observations for the next optimization run
         this.priors.commit(this.paramspace.observedValues);
@@ -113,7 +136,6 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
                 epochs: params["epochs"]
             };
 
-
             const optimizerFunction = this.modelOptimizersDict[modelIdentifier][params["optimizerFunction"]];
             model.compile({
                 loss: LossFunction[params["lossFunction"]],
@@ -129,9 +151,10 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
             let concatenatedTestLables = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
             const evaluationResult = model.evaluate(concatenatedTensorTestData, concatenatedTestLables) as tensorflow.Tensor[];
 
+            const error = evaluationResult[0].dataSync()[0];
             const score = evaluationResult[1].dataSync()[0];
             // keep track of the scores
-            this.scores.push(score);
+            this.observedValues.push({error: error, metricScores: [score]});
             return score;
         }
     }

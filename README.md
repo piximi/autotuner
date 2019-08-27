@@ -24,17 +24,18 @@ autotuner.addModel('testModel', testModel, parameters);
 ```
 
 ### Tuning the hyperparameters
-Specify the optimization algorith. The hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search. 
+Specify the optimization algorith. The hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search.
 ```javascript
 autotuner.bayesianOptimization();
 ```
 ```javascript
 autotuner.gridSearchOptimizytion();
 ```
-The autotuner can reuse the observations collected on a previous optimization run.
+When doing bayesian optimization the maximum number of domain points to be evaluated can be specified as an optional parameter.
 ```javascript
-autotuner.bayesianOptimization(true);
+autotuner.bayesianOptimization(0.8);
 ```
+In the example above the optimizytion search stops after 80% of the domain ponits have been evaluated. By default this value is set to 0.75.
 
 An example usage can be found here:
 ```bash

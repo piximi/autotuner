@@ -9,7 +9,6 @@ class Optimizer {
     modelsSamples: { [identifier: string]: number[]};
     allSamples: number[];
     observedValues: { [identifier: number]: number};
-    best: number;
     mean: math.Matrix;
     kernel: math.Matrix;
 
@@ -51,10 +50,6 @@ class Optimizer {
 
         this.allSamples = this.allSamples.concat([pointIndex]);
         this.observedValues[point] = value;
-
-        if (!this.best || this.observedValues[this.best] < value) {
-            this.best = point;
-        }
     };
 
     getNextPoint () {
@@ -62,12 +57,6 @@ class Optimizer {
         var posteriorStd: math.Matrix;
         var expectedImprov: math.Matrix;
         var modelExpectedImprovArray: number[] = [];
-
-        // If the whole domain has aleady been sampled, the expected improvement is zero
-        let unsampledDataPoints = this.domainIndices.filter(item => this.allSamples.indexOf(item) < 0);
-        if (unsampledDataPoints.length === 0) {
-            return { nextPoint: 0, expectedImprovement: -2};
-        }
 
         // if no samples have been added yet (e.g. call 'getNextPoint()' the first time) just pick anyone
         if (this.allSamples.length === 0){
