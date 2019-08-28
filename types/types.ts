@@ -3,9 +3,7 @@ import * as tensorflow from '@tensorflow/tfjs';
 
 export type Model = tensorflow.Sequential;
 
-export type datasetType = {data: tensorflow.Tensor<tensorflow.Rank>[]; lables: number[]}
-
-export type DataSet = {trainingSet: datasetType, evaluationSet: datasetType, testSet: datasetType, numberOfCategories: number}
+export type DataPoint = {data: tensorflow.Tensor<tensorflow.Rank>; lables: number}
 
 export type BaysianOptimisationStep = { nextPoint: number, expectedImprovement: number}
 

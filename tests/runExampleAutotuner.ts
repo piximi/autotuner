@@ -1,6 +1,6 @@
 import { TensorflowlModelAutotuner } from '../src/index';
-import { createTestDataset } from './data/dataset';
-import { LossFunction } from '../types/types';
+import { createDataset } from './data/dataset';
+import { LossFunction, DataPoint } from '../types/types';
 import * as tensorflow from '@tensorflow/tfjs';
 import { Classifier } from '@piximi/types';
 
@@ -9,9 +9,9 @@ const runExampleAutotuner = async () => {
         var stringContent = fs.readFileSync("C:/Users/m_lev/Projects/BA/piximi/autotuner/tests/data/smallMNISTTest.piximi");
         var classifier = JSON.parse(stringContent) as Classifier;
 
-        const dataset = await createTestDataset(classifier.categories, classifier.images);
+        const dataset = await createDataset(classifier.categories, classifier.images);
 
-        var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.trainData, dataset.testData, dataset.validationData, dataset.numberOfCategories);
+        var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.dataSet as DataPoint[], dataset.numberOfCategories);
         
         const testModel = await createModel();
 

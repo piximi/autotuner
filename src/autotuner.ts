@@ -1,13 +1,12 @@
 import * as tensorflow from '@tensorflow/tfjs';
-import * as math from 'mathjs';
-import { DataSet, ModelDict, SequentialModelParameters, datasetType, BaysianOptimisationStep, LossFunction, DomainPointValue } from '../types/types';
+import { ModelDict, SequentialModelParameters, DataPoint, BaysianOptimisationStep, LossFunction, DomainPointValue } from '../types/types';
 import * as bayesianOptimizer from './bayesianOptimizer';
 import * as gridSearchOptimizer from './gridSearchOptimizer';
 import * as paramspace from './paramspace';
 import * as priors from './priors';
+import * as modelEvaluator from './modelEvaluater';
 
 class AutotunerBaseClass {
-    dataset: DataSet;
     metrics: string[] = [];
     observedValues: DomainPointValue[] = [];
     /**
@@ -24,6 +23,7 @@ class AutotunerBaseClass {
     paramspace: any;
     optimizer: any;
     priors: any;
+    modelEvaluator: any;
 
     /**
      * Returns the value of a domain point.
@@ -31,7 +31,7 @@ class AutotunerBaseClass {
      * @param {number} domainIndex Index of the domain point to be evaluated.
      * @return {Promise<number>} Value of the domain point
      */
-    evaluateModel: (domainIndex: number) => Promise<number>;
+    evaluateModel: (domainIndex: number, objective: string, useCrossValidation: boolean) => Promise<number>;
 
     /**
      * Decide whether to continue tuning the hyperparameters.
@@ -57,21 +57,34 @@ class AutotunerBaseClass {
         }
     }
 
-    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType, numberOfCategories: number) {
-        this.paramspace = new paramspace.Paramspace();
-        this.metrics = metrics;
+    checkObjective (objective: string): boolean {
+        const allowedObjectives: string[] = ['error'].concat(this.metrics);
+        if (!allowedObjectives.includes(objective)) {
+            console.log("Invalid objective function selected!");
+            console.log("Objective function must be one of the following: " + allowedObjectives.join());
+            return true;
+        }
+        return false;
+    }
 
-        const dataset: DataSet = {trainingSet: trainingSet, testSet: testSet, evaluationSet: evaluationSet, numberOfCategories: numberOfCategories};
-        this.dataset = dataset;
+    constructor(metrics: string[], dataSet: DataPoint[], numberOfCategories: number, validationSetRatio: number = 0.25, testSetRatio: number = 0.25) {
+        this.paramspace = new paramspace.Paramspace();
+        this.modelEvaluator = new modelEvaluator.ModelEvaluater(dataSet, numberOfCategories, validationSetRatio, testSetRatio);
+        this.metrics = metrics;
     }
 
     /**
      * Search the best Parameters using bayesian optimization.
      * 
+     * @param {string} [objective='error'] Define the objective of the optimization. Set to 'error' by default.
+     * @param {boolean} [useCrossValidation=false] Indicate wheter or not to use cross validation to evaluate the model. Set to 'false' by default.
      * @param {number} [maxIteration=0.75] Fraction of domain points that should be evaluated at most. (e.g. for 'maxIteration=0.75' the optimization stops if 75% of the domain has been evaluated)
      * @param {boolean} [stopingCriteria] Predicate on the observed values when to stop the optimization
      */
-    async bayesianOptimization(maxIteration: number = 0.75, stopingCriteria?: ((observedValues: DomainPointValue[]) => boolean)) {
+    async bayesianOptimization(objective: string = 'error', useCrossValidation: boolean = false, maxIteration: number = 0.75, stopingCriteria?: ((observedValues: DomainPointValue[]) => boolean)) {
+        if (this.checkObjective(objective)) {
+            return;
+        }
         this.initializePriors();
         this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
         this.maxIterations = maxIteration;
@@ -79,22 +92,28 @@ class AutotunerBaseClass {
             this.metricsStopingCriteria = stopingCriteria;
         }
         
-        this.tuneHyperparameters();
+        this.tuneHyperparameters(objective, useCrossValidation);
     }
 
     /**
      * Search the best Parameters using grid search.
+     * 
+     * @param {string} [objective='error'] Define the objective of the optimization. Set to 'error' by default.
+     * @param {boolean} [useCrossValidation=false] Indicate wheter or not to use cross validation to evaluate the model. Set to 'false' by default.
      */
-    async gridSearchOptimizytion() {
+    async gridSearchOptimizytion(objective: string = 'error', useCrossValidation: boolean = false) {
+        if (this.checkObjective(objective)) {
+            return;
+        }
         this.initializePriors();
         this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
         this.maxIterations = 1;
 
-        this.tuneHyperparameters();
+        this.tuneHyperparameters(objective, useCrossValidation);
     }
 
 
-    async tuneHyperparameters() {
+    async tuneHyperparameters(objective: string, useCrossValidation: boolean) {
         console.log("============================");
         console.log("tuning the hyperparameters");
 
@@ -104,13 +123,12 @@ class AutotunerBaseClass {
             var nextOptimizationPoint: BaysianOptimisationStep = this.optimizer.getNextPoint();
             
             // Train a model given the params and obtain a quality metric value.
-            var value = await this.evaluateModel(nextOptimizationPoint.nextPoint);
+            var value = await this.evaluateModel(nextOptimizationPoint.nextPoint, objective, useCrossValidation);
             
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
 
             optimizing = this.stopingCriteria();
-            
         }
         // keep observations for the next optimization run
         this.priors.commit(this.paramspace.observedValues);
@@ -123,10 +141,19 @@ class AutotunerBaseClass {
 class TensorflowlModelAutotuner extends AutotunerBaseClass {
     modelDict: ModelDict = {};
 
-    constructor(metrics: string[], trainingSet: datasetType, testSet: datasetType, evaluationSet: datasetType, numberOfCategories: number) {
-        super(metrics, trainingSet, testSet, evaluationSet, numberOfCategories);
+    /**
+     * Initialize the autotuner.
+     * 
+     * @param {string[]} metrics
+     * @param {DataPoint[]} dataSet
+     * @param {number} numberOfCategories 
+     * @param {number=0.25} validationSetRatio
+     * @param {number=0.25} testSetRatio
+     */
+    constructor(metrics: string[], dataSet: DataPoint[], numberOfCategories: number, validationSetRatio: number = 0.25, testSetRatio: number = 0.25) {
+        super(metrics, dataSet, numberOfCategories, validationSetRatio, testSetRatio);
 
-        this.evaluateModel = async (point: number) => {
+        this.evaluateModel = async (point: number, objective: string, useCrossValidation: boolean) => {
             const modelIdentifier = this.paramspace.domain[point]['model'];
             const model = this.modelDict[modelIdentifier];
             const params = this.paramspace.domain[point]['params'];
@@ -143,22 +170,21 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
                 optimizer: optimizerFunction
             });
           
-            let concatenatedTensorTrainData = tensorflow.tidy(() => tensorflow.concat(this.dataset.trainingSet.data));
-            let concatenatedTrainLableData = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
-            await model.fit(concatenatedTensorTrainData, concatenatedTrainLableData, args);
-
-            let concatenatedTensorTestData = tensorflow.tidy(() => tensorflow.concat(this.dataset.trainingSet.data));
-            let concatenatedTestLables = tensorflow.tidy(() => tensorflow.oneHot(this.dataset.trainingSet.lables, this.dataset.numberOfCategories));
-            const evaluationResult = model.evaluate(concatenatedTensorTestData, concatenatedTestLables) as tensorflow.Tensor[];
-
-            const error = evaluationResult[0].dataSync()[0];
-            const score = evaluationResult[1].dataSync()[0];
-            // keep track of the scores
-            this.observedValues.push({error: error, metricScores: [score]});
-            return score;
+            let dataPointValue: DomainPointValue = useCrossValidation 
+                ? await this.modelEvaluator.EvaluateSequentialTensorflowModelCV(model, args)
+                : await this.modelEvaluator.EvaluateSequentialTensorflowModel(model, args);
+            this.observedValues.push(dataPointValue);
+            return objective === 'error' ? dataPointValue.error : dataPointValue.metricScores[0];
         }
     }
 
+    /**
+     * Add a new model and its range of parameters to the autotuner.
+     * 
+     * @param {string} modelIdentifier Identifier of the model
+     * @param {tensorflow.Sequential} model Actual Tensorflow model
+     * @param {SequentialModelParameters} modelParameters Parameters of the Model: define lossfunction, optimizer, algorithm batch size and number of traning epochs.
+     */
     addModel(modelIdentifier: string, model: tensorflow.Sequential, modelParameters: SequentialModelParameters) {
         this.modelDict[modelIdentifier] = model;
 
