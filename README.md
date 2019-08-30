@@ -10,9 +10,9 @@ import { TensorflowlModelAutotuner } from '@piximi/autotuner';
 
 ### Getting Started
 
-Initialize the autotuner by specifying metrics and a dataset.
+Initialize the autotuner by specifying metrics, a dataset and the number of categories.
 ```javascript
-var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.trainData, dataset.testData, dataset.validationData);
+var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset, numberOfCategories);
 ```
 ### Adding a model to the autotuner
 ```javascript
@@ -24,27 +24,32 @@ autotuner.addModel('testModel', testModel, parameters);
 ```
 
 ### Tuning the hyperparameters
-Specify the optimization algorith. The hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search.
+Specify the optimization algorithm: the hyperparameters can be tuned by either doing bayesian optimization or by doing a simple grid search.
 ```javascript
 autotuner.bayesianOptimization();
 ```
 ```javascript
 autotuner.gridSearchOptimizytion();
 ```
-#### Optinal parameters
-The ojective function of the optimization can be specified (either 'error' or 'accuracy').
+The ojective function of the optimization can be specified (either 'error' or 'accuracy'):
 ```javascript
 autotuner.gridSearchOptimizytion('accuracy');
 ```
-Also one can enable cross validation when evaluating a model.
+Evaluating a model can be done using cross validation:
 ```javascript
 autotuner.gridSearchOptimizytion('accuracy', true);
 ```
-When doing bayesian optimization the maximum number of domain points to be evaluated can be specified as an optional parameter.
+When doing bayesian optimization the maximum number of domain points to be evaluated can be specified as an optional parameter:
 ```javascript
 autotuner.bayesianOptimization('accuracy', true, 0.8);
 ```
-In the example above the optimizytion search stops after 80% of the domain ponits have been evaluated. By default this value is set to 0.75.  
+In the example above the optimizytion stops after 80% of the domain ponits have been evaluated. By default this value is set to 0.75.  
+### Evaluate the best hyperparameters
+The best hyperparameters found in the optimization run can be evaluated on the test set. Specify the objective and wheter or not to use cross validation.
+```javascript
+autotuner.evaluateBestParameter('error', true);
+```
+
 ### Example
 An example usage can be found here:
 ```bash
@@ -54,17 +59,18 @@ tets/runExampleAutotuner.ts
 
 Pull and initialize:
 ```bash
-git pull https://github.com/piximi/autotuner.git
+git clone https://github.com/piximi/autotuner.git
 cd autotuner
 npm install
 ```
 
 To run tests:
 ```bash
-npm test
+npm run test
+npm run runExampleAutotuner
 ```
 
 To compile the code and check for type errors:
 ```bash
-npm build
+npm run build
 ```

@@ -5,20 +5,26 @@ import * as tensorflow from '@tensorflow/tfjs';
 import { Classifier } from '@piximi/types';
 
 const runExampleAutotuner = async () => {
-        var fs = require("fs");
-        var stringContent = fs.readFileSync("C:/Users/m_lev/Projects/BA/piximi/autotuner/tests/data/smallMNISTTest.piximi");
-        var classifier = JSON.parse(stringContent) as Classifier;
+    var path = require("path");
+    var fs = require("fs");
+    var testFilePath = path.resolve('tests', 'data', 'smallMNISTTest.piximi');
+    var stringContent = fs.readFileSync(testFilePath);
+    var classifier = JSON.parse(stringContent) as Classifier;
 
-        const dataset = await createDataset(classifier.categories, classifier.images);
+    const dataset = await createDataset(classifier.categories, classifier.images);
 
-        var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.dataSet as DataPoint[], dataset.numberOfCategories);
-        
-        const testModel = await createModel();
+    var autotuner = new TensorflowlModelAutotuner(['accuracy'], dataset.dataSet as DataPoint[], dataset.numberOfCategories);
+    
+    const testModel = await createModel();
 
-        const parameters = { lossfunction: [LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta()], batchSize: [10], epochs: [5,10] };
-        autotuner.addModel('testModel', testModel, parameters);
+    const parameters = { lossfunction: [LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta()], batchSize: [10], epochs: [5,10] };
+    autotuner.addModel('testModel', testModel, parameters);
 
-        autotuner.bayesianOptimization();
+    // tune the hyperparameters
+    await autotuner.bayesianOptimization();
+
+    // evaluate the best parameters found on the test set
+    autotuner.evaluateBestParameter('error', true)
 };
 
 runExampleAutotuner();

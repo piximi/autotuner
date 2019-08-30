@@ -30,40 +30,27 @@ export class ModelEvaluater{
         this.trainData = dataSet;
     }
 
-    ConcatenateTensorData(data: DataPoint[]) {
-        const trainData: tensorflow.Tensor<tensorflow.Rank>[] = [];
-        const trainLables: number[] = [];
-        for (let i = 0; i < data.length; i++) {
-            trainData.push(data[i].data);
-            trainLables.push(data[i].lables);
-        }
-        
-        let concatenatedTensorData = tensorflow.tidy(() => tensorflow.concat(trainData));
-        let concatenatedLables = tensorflow.tidy(() => tensorflow.oneHot(trainLables, this.numberOfCategories));
-        return { concatenatedTensorData, concatenatedLables };
-    }
-
-    EvaluateSequentialTensorflowModel = async (model: tensorflow.Sequential, args: any): Promise<DomainPointValue> => {
+    EvaluateSequentialTensorflowModel = async (model: tensorflow.Sequential, args: any, useTestData: boolean): Promise<DomainPointValue> => {
         var trainData = this.ConcatenateTensorData(this.trainData);
         await model.fit(trainData.concatenatedTensorData, trainData.concatenatedLables, args);
 
-        var validationData = this.ConcatenateTensorData(this.validationData);
+        var validationData = useTestData ? this.ConcatenateTensorData(this.testData) : this.ConcatenateTensorData(this.validationData);
         const evaluationResult = model.evaluate(validationData.concatenatedTensorData, validationData.concatenatedLables) as tensorflow.Tensor[];
 
         const error = evaluationResult[0].dataSync()[0];
-        const score = evaluationResult[1].dataSync()[0];
-        return {error: error, metricScores: [score]} as DomainPointValue;
+        const accuracy = evaluationResult[1].dataSync()[0];
+        return {error: error, accuracy: accuracy} as DomainPointValue;
     }
 
-    EvaluateSequentialTensorflowModelCV = async (model: tensorflow.Sequential, args: any): Promise<DomainPointValue> => {
-        const dataSet = this.trainData.concat(this.validationData);
+    EvaluateSequentialTensorflowModelCV = async (model: tensorflow.Sequential, args: any, useTestData: boolean): Promise<DomainPointValue> => {
+        const dataSet = useTestData ? this.testData : this.trainData.concat(this.validationData);
         const dataSize = dataSet.length;
         const k = math.min(10, math.floor(math.nthRoot(dataSize) as number));
     
         const dataFolds: DataPoint[][] = Array.from(Array(math.ceil(dataSet.length/k)), (_,i) => dataSet.slice(i*k,i*k+k));
     
         var error = 0;
-        var score = 0;
+        var accuracy = 0;
         for (let i = 0; i < k; i++) {
             var validationData = dataFolds[i];
             var trainData: DataPoint[] = [];
@@ -77,16 +64,34 @@ export class ModelEvaluater{
             var concatenatedTrainData = this.ConcatenateTensorData(trainData);
             await model.fit(concatenatedTrainData.concatenatedTensorData, concatenatedTrainData.concatenatedLables, args);
 
-            var concatenatedValidationData = this.ConcatenateTensorData(validationData);
-            const evaluationResult = model.evaluate(concatenatedValidationData.concatenatedTensorData, concatenatedValidationData.concatenatedLables) as tensorflow.Tensor[];
-
-            const foldError = evaluationResult[0].dataSync()[0];
-            const foldScore = evaluationResult[1].dataSync()[0];
-            error += foldError;
-            score += foldScore;
+            var evaluationResult = await this.EvaluateTensorflowModel(model, validationData);
+            error += evaluationResult.error;
+            accuracy += evaluationResult.accuracy;
         }
-        return {error: error/dataSize, metricScores: [score/k]} as DomainPointValue;
+        return {error: error/dataSize, accuracy: accuracy/k} as DomainPointValue;
     
+    }
+
+    ConcatenateTensorData = (data: DataPoint[]) => {
+        const trainData: tensorflow.Tensor<tensorflow.Rank>[] = [];
+        const trainLables: number[] = [];
+        for (let i = 0; i < data.length; i++) {
+            trainData.push(data[i].data);
+            trainLables.push(data[i].lables);
+        }
+        
+        let concatenatedTensorData = tensorflow.tidy(() => tensorflow.concat(trainData));
+        let concatenatedLables = tensorflow.tidy(() => tensorflow.oneHot(trainLables, this.numberOfCategories));
+        return { concatenatedTensorData, concatenatedLables };
+    }
+
+    EvaluateTensorflowModel = async (model: tensorflow.Sequential, evaluationData: DataPoint[]) => {
+        var concatenatedEvaluationData = this.ConcatenateTensorData(evaluationData);
+        const evaluationResult = model.evaluate(concatenatedEvaluationData.concatenatedTensorData, concatenatedEvaluationData.concatenatedLables) as tensorflow.Tensor[];
+
+        const error = evaluationResult[0].dataSync()[0];
+        const accuracy = evaluationResult[1].dataSync()[0];
+        return {error: error, accuracy: accuracy} as DomainPointValue;
     }
 
 }

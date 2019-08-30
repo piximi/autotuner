@@ -18,7 +18,6 @@ const argmax = (array: number[]) => {
  * @param {Array.<number>} std Standard deviation values of the probability distribution over a given domain.
  * @return {Array.<number>} Values of the expected improvement for all points of the mean and std.
  */
-// TODO: change type of parameters, use math.matrix, adjust usages
 const expectedImprovement = (bestObjective: number, mean: math.Matrix, std: math.Matrix) => {
     var mean: math.Matrix;
     var std: math.Matrix;

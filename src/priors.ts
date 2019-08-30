@@ -62,7 +62,6 @@ class Priors {
                             }
                         }
                     }
-                    // TODO: test matrix operations and casts to matrix
                     cov /= (this.observedValues[point].length * this.observedValues[point2].length)
                     this.kernel = math.subset(this.kernel, math.index(idx, idx2), cov) as math.Matrix;
                     this.kernel = math.subset(this.kernel, math.index(idx2, idx), cov) as math.Matrix;
