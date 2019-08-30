@@ -1,6 +1,6 @@
 {
   "name": "autotuner",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Bayesian optimization of black-box functions.",
   "main": "index.js",
   "license": "BSD-3-Clause",
