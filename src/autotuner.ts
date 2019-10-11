@@ -19,7 +19,7 @@ class AutotunerBaseClass {
      * 
      * @return {boolean} false if tuning the hyperparameters should be stopped, true otherwise
      */
-    stoppingCriteria: (observedValues: ObservedValues, expectedImprovement: number) => boolean;
+    stoppingCriteria: (observedValues: ObservedValues, acquisitionFunctionValue: number) => boolean;
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
     paramspace: any;
     optimizer: any;
@@ -62,14 +62,14 @@ class AutotunerBaseClass {
      * 
      * @return {boolean} true if tuning the hyperparameters should be stopped, false otherwise
      */
-    stopTraining(expectedImprovement: number) {
+    stopTraining(acquisitionFunctionValue: number) {
         const domainSize = this.paramspace.domainIndices.length;
         const numberOfObservedValues = this.observedValues['domainIndices'].length;
         var fractionOfEvaluatedPoints = numberOfObservedValues / domainSize;
         var maxIterationsReached: boolean = fractionOfEvaluatedPoints <= this.maxIterations;
 
         if (this.stoppingCriteria) {
-            return maxIterationsReached || this.stoppingCriteria(this.observedValues, expectedImprovement);
+            return maxIterationsReached || this.stoppingCriteria(this.observedValues, acquisitionFunctionValue);
         }
         return maxIterationsReached;
     }
@@ -108,8 +108,12 @@ class AutotunerBaseClass {
      * @param {boolean} [stoppingCriteria] Predicate on the observed values when to stop the optimization
      * @return Returns the best parameters found in the optimization run.
      */
-    async bayesianOptimization(objective: string = 'error', useCrossValidation: boolean = false, maxIteration: number = 0.75, stoppingCriteria?: ((observedValues: ObservedValues, expectedImprovement: number) => boolean)) {
+    async bayesianOptimization(objective: string = 'error', acquisitionFunction: string = 'expectedImprovement', useCrossValidation: boolean = false, maxIteration: number = 0.75, stoppingCriteria?: ((observedValues: ObservedValues, expectedImprovement: number) => boolean)) {
         if (this.checkObjective(objective)) {
+            return;
+        }
+        if (!(acquisitionFunction == 'expectedImprovement' || acquisitionFunction == 'upperConfidenceBound')){
+            console.log('acquisitionFunction must be \'expectedImprovement\' or \'upperConfidenceBound\'!')
             return;
         }
         this.initializePriors();
@@ -149,6 +153,7 @@ class AutotunerBaseClass {
         while (optimizing) {
             // get the next point to evaluate from the optimizer
             var nextOptimizationPoint: BaysianOptimisationStep = this.optimizer.getNextPoint();
+            console.log(nextOptimizationPoint.acquisitionFunctionValue)
             
             // Train a model given the params and obtain a quality metric value.
             var value = await this.evaluateModel(nextOptimizationPoint.nextPoint, objective, useCrossValidation, false);
@@ -156,7 +161,7 @@ class AutotunerBaseClass {
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
 
-            optimizing = this.stopTraining(nextOptimizationPoint.expectedImprovement);
+            optimizing = this.stopTraining(nextOptimizationPoint.acquisitionFunctionValue);
         }
         // keep observations for the next optimization run
         this.priors.commit(this.paramspace.observedValues);
@@ -167,7 +172,6 @@ class AutotunerBaseClass {
         var bestScoreDomainIndex = this.bestParameter(objective) as number;
         var bestParameters = this.paramspace.domain[bestScoreDomainIndex]['params'];
         console.log("The best parameters found are:");
-        console.log(bestParameters);
         return bestParameters;
     }
 }

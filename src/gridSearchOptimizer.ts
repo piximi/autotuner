@@ -48,7 +48,7 @@ class Optimizer {
             return { nextPoint: this.domainIndices[0], expectedImprovement: -1}
         }
 
-        const baysianOptimisationStep: BaysianOptimisationStep = { nextPoint: this.domainIndices[this.nextDomainIndex], expectedImprovement: 0};
+        const baysianOptimisationStep: BaysianOptimisationStep = { nextPoint: this.domainIndices[this.nextDomainIndex], acquisitionFunctionValue: 0};
         this.nextDomainIndex++;
         return baysianOptimisationStep;
 

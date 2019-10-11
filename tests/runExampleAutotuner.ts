@@ -21,7 +21,7 @@ const runExampleAutotuner = async () => {
     autotuner.addModel('testModel', testModel, parameters);
 
     // tune the hyperparameters
-    await autotuner.bayesianOptimization();
+    await autotuner.bayesianOptimization('error', 'upperConfidenceBound');
 
     // evaluate the best parameters found on the test set
     autotuner.evaluateBestParameter('error', true)

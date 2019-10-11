@@ -5,7 +5,7 @@ export type Model = tensorflow.Sequential;
 
 export type DataPoint = {data: tensorflow.Tensor<tensorflow.Rank>; lables: number}
 
-export type BaysianOptimisationStep = { nextPoint: number, expectedImprovement: number}
+export type BaysianOptimisationStep = { nextPoint: number, acquisitionFunctionValue: number}
 
 export enum LossFunction {
     'absoluteDifference',
