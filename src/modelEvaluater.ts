@@ -35,7 +35,7 @@ export class ModelEvaluater{
         await model.fit(trainData.concatenatedTensorData, trainData.concatenatedLables, args);
 
         var validationData = useTestData ? this.ConcatenateTensorData(this.testData) : this.ConcatenateTensorData(this.validationData);
-        const evaluationResult = model.evaluate(validationData.concatenatedTensorData, validationData.concatenatedLables) as tensorflow.Tensor[];
+        const evaluationResult = await model.evaluate(validationData.concatenatedTensorData, validationData.concatenatedLables) as tensorflow.Tensor[];
 
         const error = evaluationResult[0].dataSync()[0];
         const accuracy = evaluationResult[1].dataSync()[0];

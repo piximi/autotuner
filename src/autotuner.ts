@@ -19,7 +19,7 @@ class AutotunerBaseClass {
      * 
      * @return {boolean} false if tuning the hyperparameters should be stopped, true otherwise
      */
-    metricsStopingCriteria: (observedValues: ObservedValues) => boolean;
+    stoppingCriteria: (observedValues: ObservedValues, expectedImprovement: number) => boolean;
     modelOptimizersDict: { [model: string]: tensorflow.Optimizer[] } = {};
     paramspace: any;
     optimizer: any;
@@ -60,16 +60,16 @@ class AutotunerBaseClass {
      * Decide whether to continue tuning the hyperparameters.
      * Stop tuning the parameters if either the maximun muber of iterations has been reached or if 'metricsStopingCriteria' returns false
      * 
-     * @return {boolean} false if tuning the hyperparameters should be stopped, true otherwise
+     * @return {boolean} true if tuning the hyperparameters should be stopped, false otherwise
      */
-    stopingCriteria() {
+    stopTraining(expectedImprovement: number) {
         const domainSize = this.paramspace.domainIndices.length;
         const numberOfObservedValues = this.observedValues['domainIndices'].length;
         var fractionOfEvaluatedPoints = numberOfObservedValues / domainSize;
         var maxIterationsReached: boolean = fractionOfEvaluatedPoints <= this.maxIterations;
 
-        if (this.metricsStopingCriteria) {
-            return maxIterationsReached || this.metricsStopingCriteria(this.observedValues);
+        if (this.stoppingCriteria) {
+            return maxIterationsReached || this.stoppingCriteria(this.observedValues, expectedImprovement);
         }
         return maxIterationsReached;
     }
@@ -105,18 +105,18 @@ class AutotunerBaseClass {
      * @param {string} [objective='error'] Define the objective of the optimization. Set to 'error' by default.
      * @param {boolean} [useCrossValidation=false] Indicate wheter or not to use cross validation to evaluate the model. Set to 'false' by default.
      * @param {number} [maxIteration=0.75] Fraction of domain points that should be evaluated at most. (e.g. for 'maxIteration=0.75' the optimization stops if 75% of the domain has been evaluated)
-     * @param {boolean} [stopingCriteria] Predicate on the observed values when to stop the optimization
+     * @param {boolean} [stoppingCriteria] Predicate on the observed values when to stop the optimization
      * @return Returns the best parameters found in the optimization run.
      */
-    async bayesianOptimization(objective: string = 'error', useCrossValidation: boolean = false, maxIteration: number = 0.75, stopingCriteria?: ((observedValues: ObservedValues) => boolean)) {
+    async bayesianOptimization(objective: string = 'error', useCrossValidation: boolean = false, maxIteration: number = 0.75, stoppingCriteria?: ((observedValues: ObservedValues, expectedImprovement: number) => boolean)) {
         if (this.checkObjective(objective)) {
             return;
         }
         this.initializePriors();
         this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, this.priors.mean, this.priors.kernel);
         this.maxIterations = maxIteration;
-        if (stopingCriteria) {
-            this.metricsStopingCriteria = stopingCriteria;
+        if (stoppingCriteria) {
+            this.stoppingCriteria = stoppingCriteria;
         }
         
         return await this.tuneHyperparameters(objective, useCrossValidation);
@@ -156,7 +156,7 @@ class AutotunerBaseClass {
             // Report the obtained quality metric value.
             this.optimizer.addSample(nextOptimizationPoint.nextPoint, value);
 
-            optimizing = this.stopingCriteria();
+            optimizing = this.stopTraining(nextOptimizationPoint.expectedImprovement);
         }
         // keep observations for the next optimization run
         this.priors.commit(this.paramspace.observedValues);
