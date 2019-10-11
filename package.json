@@ -1,6 +1,6 @@
 {
   "name": "@piximi/autotuner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bayesian optimization of tensorflow models",
   "main": "index.js",
   "license": "BSD-3-Clause",
