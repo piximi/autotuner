@@ -153,7 +153,6 @@ class AutotunerBaseClass {
         while (optimizing) {
             // get the next point to evaluate from the optimizer
             var nextOptimizationPoint: BaysianOptimisationStep = this.optimizer.getNextPoint();
-            console.log(nextOptimizationPoint.acquisitionFunctionValue)
             
             // Train a model given the params and obtain a quality metric value.
             var value = await this.evaluateModel(nextOptimizationPoint.nextPoint, objective, useCrossValidation, false);
@@ -168,10 +167,8 @@ class AutotunerBaseClass {
         
         console.log("============================");
         console.log("finished tuning the hyperparameters");
-        console.log();
         var bestScoreDomainIndex = this.bestParameter(objective) as number;
         var bestParameters = this.paramspace.domain[bestScoreDomainIndex]['params'];
-        console.log("The best parameters found are:");
         return bestParameters;
     }
 }
@@ -203,7 +200,7 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
 
             const optimizerFunction = this.modelOptimizersDict[modelIdentifier][params["optimizerFunction"]];
             model.compile({
-                loss: LossFunction[params["lossFunction"]],
+                loss: lossFunctionDict[LossFunction[params["lossFunction"]]],
                 metrics: metrics,
                 optimizer: optimizerFunction
             });
@@ -239,5 +236,16 @@ class TensorflowlModelAutotuner extends AutotunerBaseClass {
             'epochs' : modelParameters.epochs});
     }
 }
+
+const lossFunctionDict: { [identifier: string]: any } = {
+    absoluteDifference: tensorflow.losses.absoluteDifference,
+    cosineDistance: tensorflow.losses.cosineDistance,
+    hingeLoss: tensorflow.losses.hingeLoss,
+    huberLoss: tensorflow.losses.huberLoss,
+    logLoss: tensorflow.losses.logLoss,
+    meanSquaredError: tensorflow.losses.meanSquaredError,
+    sigmoidCrossEntropy: tensorflow.losses.sigmoidCrossEntropy,
+    categoricalCrossentropy: tensorflow.losses.softmaxCrossEntropy
+  };
 
 export { AutotunerBaseClass, TensorflowlModelAutotuner }
