@@ -1,10 +1,20 @@
 {
-  "name": "autotuner",
+  "name": "@piximi/autotuner",
   "version": "1.0.0",
-  "description": "Bayesian optimization of black-box functions.",
+  "description": "Bayesian optimization of tensorflow models",
   "main": "index.js",
   "license": "BSD-3-Clause",
-  "homepage": "https://github.com/piximi/autotuner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piximi/autotuner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/piximi/autotuner/issues"
+  },
+  "contributors": [
+    "Levin Moser",
+    "Bojan Karlaš"
+  ],
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
     "test": "jest ./tests",
@@ -14,10 +24,6 @@
     "preset": "ts-jest",
     "testEnvironment": "node"
   },
-  "contributors": [
-    "Levin Moser",
-    "Bojan Karlaš"
-  ],
   "dependencies": {
     "@piximi/types": "^0.1.8",
     "@tensorflow/tfjs": "^1.2.1",
