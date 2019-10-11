@@ -1,8 +1,8 @@
 {
   "name": "@piximi/autotuner",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Bayesian optimization of tensorflow models",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -20,6 +20,9 @@
     "test": "jest ./tests",
     "runExampleAutotuner": "tsc -p ./tsconfig.json && ts-node tests\\runExampleAutotuner.ts"
   },
+  "files": [
+    "dist"
+  ],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"
