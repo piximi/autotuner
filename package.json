@@ -2,7 +2,7 @@
   "name": "@piximi/autotuner",
   "version": "1.0.2",
   "description": "Bayesian optimization of tensorflow models",
-  "main": "./dist/index.js",
+  "main": "./dist/src/index.js",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
