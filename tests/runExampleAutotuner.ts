@@ -17,11 +17,11 @@ const runExampleAutotuner = async () => {
     
     const testModel = await createModel();
 
-    const parameters = { lossfunction: [LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta()], batchSize: [10], epochs: [5,10] };
+    const parameters = { lossfunction: [LossFunction.categoricalCrossentropy, LossFunction.softmaxCrossEntropy], optimizerAlgorithm: [tensorflow.train.adadelta(), tensorflow.train.adamax(), tensorflow.train.sgd(0.3)], batchSize: [10], epochs: [5,10, 15] };
     autotuner.addModel('testModel', testModel, parameters);
 
     // tune the hyperparameters
-    await autotuner.bayesianOptimization('error', 'upperConfidenceBound');
+    await autotuner.bayesianOptimization('error', 'expectedImprovement');
 
     // evaluate the best parameters found on the test set
     autotuner.evaluateBestParameter('error', true)

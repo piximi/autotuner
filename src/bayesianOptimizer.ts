@@ -89,9 +89,11 @@ class Optimizer {
 
         // Defend against singular matrix inversion.
         sampleKernel = math.add(sampleKernel, math.multiply(math.identity(sampleSize), 0.001)) as math.Matrix;
-
         var sampleKernelInv = math.inv(sampleKernel);
-        var sampleRewardGain = math.reshape(math.matrix(Array.from(this.allSamples, (x: number) => this.observedValues[this.domainIndices[x]] - meanArray[this.domainIndices[x]])), [sampleSize, 1]);
+
+        // TODO: fix dimension error, mean should be subtracted but is zero always
+        // var sampleRewardGain = math.reshape(math.subtract(sampleRewards, samplePriorMean) as math.Matrix, [sampleSize, 1]);
+        var sampleRewardGain = math.reshape(math.matrix(Array.from(this.allSamples, (x: number) => this.observedValues[this.domainIndices[x]])) as math.Matrix, [sampleSize, 1]);
         var sampleKernelDotGain = math.multiply(sampleKernelInv, sampleRewardGain) as math.Matrix;
         
         posteriorMean = math.multiply(allToSampleKernel, sampleKernelDotGain) as math.Matrix;
@@ -124,7 +126,8 @@ class Optimizer {
                 expectedImprov = expectedImprov.subset(math.index(modelPoints), improvement) as math.Matrix;
 
                 upperConfidenceBounds = math.reshape(modelUpperConfidenceBounds, [modelPoints.length]) as math.Matrix;
-                var upperBound = math.add(upperConfidenceBounds.subset(math.index(modelPoints)), modelUpperConfidenceBounds);
+                // var upperBound = math.add(upperConfidenceBounds.subset(math.index(modelPoints)), modelUpperConfidenceBounds);
+                var upperBound = math.add(upperConfidenceBounds, modelUpperConfidenceBounds);
                 upperConfidenceBounds = upperConfidenceBounds.subset(math.index(modelPoints), upperBound) as math.Matrix;
             }
         }

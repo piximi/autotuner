@@ -7,8 +7,6 @@ class Optimizer {
     modelsSamples: { [identifier: string]: number[]};
     allSamples: number[];
     observedValues: { [identifier: number]: number};
-    best: { index: number, value: number};
-
 
     constructor (domainIndices: number[], modelsDomains: ModelsDomain, mean: NullableMatrix = null, kernel: NullableMatrix = null) {
         this.domainIndices = domainIndices;
@@ -36,18 +34,9 @@ class Optimizer {
 
         this.allSamples = this.allSamples.concat([pointIndex]);
         this.observedValues[point] = value;
-
-        if (!this.best || (this.observedValues[this.best.value] < value)) {
-            this.best = { index: point, value: value};
-        }
     };
 
     getNextPoint () {
-        // if no samples have been added yet (e.g. call 'getNextPoint()' the first time) just pick anyone
-        if (this.allSamples.length === 0){
-            return { nextPoint: this.domainIndices[0], expectedImprovement: -1}
-        }
-
         const baysianOptimisationStep: BaysianOptimisationStep = { nextPoint: this.domainIndices[this.nextDomainIndex], acquisitionFunctionValue: 0};
         this.nextDomainIndex++;
         return baysianOptimisationStep;
