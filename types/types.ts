@@ -15,7 +15,6 @@ export enum LossFunction {
     'logLoss',
     'meanSquaredError',
     'sigmoidCrossEntropy',
-    'softmaxCrossEntropy',
     'categoricalCrossentropy',
 }
 

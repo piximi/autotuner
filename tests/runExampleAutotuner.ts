@@ -17,7 +17,7 @@ const runExampleAutotuner = async () => {
     
     const testModel = await createModel();
 
-    const parameters = { lossfunction: [LossFunction.categoricalCrossentropy, LossFunction.softmaxCrossEntropy], optimizerAlgorithm: [tensorflow.train.adadelta(), tensorflow.train.adamax(), tensorflow.train.sgd(0.3)], batchSize: [10], epochs: [5,10, 15] };
+    const parameters = { lossfunction: [LossFunction.categoricalCrossentropy, LossFunction.categoricalCrossentropy], optimizerAlgorithm: [tensorflow.train.adadelta(), tensorflow.train.adamax(), tensorflow.train.sgd(0.3)], batchSize: [10], epochs: [5,10, 15] };
     autotuner.addModel('testModel', testModel, parameters);
 
     // tune the hyperparameters
