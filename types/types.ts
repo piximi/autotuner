@@ -35,8 +35,6 @@ export type ModelsDomain = { [identifier: string] : number[]};
 
 export type ModelDict = { [identifier: string] : Model};
 
-export type NullableMatrix = math.Matrix | null;
-
 export type DomainPointValue = { error: number, accuracy: number }
 
 export type ObservedValues = { [identifier: string]: number[] }

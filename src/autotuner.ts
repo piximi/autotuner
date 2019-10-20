@@ -117,7 +117,7 @@ class AutotunerBaseClass {
             return;
         }
         this.initializePriors();
-        this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains, acquisitionFunction, this.priors.mean, this.priors.kernel);
+        this.optimizer = new bayesianOptimizer.Optimizer(this.paramspace.domainIndices, acquisitionFunction);
         this.maxIterations = maxIteration;
         if (stoppingCriteria) {
             this.stoppingCriteria = stoppingCriteria;
@@ -138,7 +138,7 @@ class AutotunerBaseClass {
             return;
         }
         this.initializePriors();
-        this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices, this.paramspace.modelsDomains);
+        this.optimizer = new gridSearchOptimizer.Optimizer(this.paramspace.domainIndices);
         this.maxIterations = 1;
 
         return await this.tuneHyperparameters(objective, useCrossValidation);
