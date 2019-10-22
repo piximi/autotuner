@@ -14,9 +14,9 @@ class Optimizer {
     constructor (domainIndices: number[], acquisitionFunction: string) {
         this.domainIndices = domainIndices;
         this.xUnobserved = domainIndices;
-        if (acquisitionFunction == 'expectedImprovement') {
+        if (acquisitionFunction == 'ei') {
             this.acquisitionFunction = (means: math.Matrix, stds: math.Matrix) => expectedImprovement(this.best, means, stds);
-        } else {
+        } else if (acquisitionFunction == 'ucb') {
             this.acquisitionFunction = upperConfidenceBound;
         }
     }

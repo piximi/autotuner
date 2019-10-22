@@ -103,17 +103,18 @@ class AutotunerBaseClass {
      * Search the best Parameters using bayesian optimization.
      * 
      * @param {string} [objective='error'] Define the objective of the optimization. Set to 'error' by default.
+     * @param {string} [acquisitionFunction='ei'] Define the acquisition function of the optimization. Set to 'expectedImprovement' by default.
      * @param {boolean} [useCrossValidation=false] Indicate wheter or not to use cross validation to evaluate the model. Set to 'false' by default.
      * @param {number} [maxIteration=0.75] Fraction of domain points that should be evaluated at most. (e.g. for 'maxIteration=0.75' the optimization stops if 75% of the domain has been evaluated)
      * @param {boolean} [stoppingCriteria] Predicate on the observed values when to stop the optimization
      * @return Returns the best parameters found in the optimization run.
      */
-    async bayesianOptimization(objective: string = 'error', acquisitionFunction: string = 'expectedImprovement', useCrossValidation: boolean = false, maxIteration: number = 0.75, stoppingCriteria?: ((observedValues: ObservedValues, expectedImprovement: number) => boolean)) {
+    async bayesianOptimization(objective: string = 'error', acquisitionFunction: string = 'ei', useCrossValidation: boolean = false, maxIteration: number = 0.75, stoppingCriteria?: ((observedValues: ObservedValues, expectedImprovement: number) => boolean)) {
         if (this.checkObjective(objective)) {
             return;
         }
-        if (!(acquisitionFunction == 'expectedImprovement' || acquisitionFunction == 'upperConfidenceBound')){
-            console.log('acquisitionFunction must be \'expectedImprovement\' or \'upperConfidenceBound\'!')
+        if (!(acquisitionFunction == 'ei' || acquisitionFunction == 'ucb')){
+            console.log('acquisition function must be \'ei\' (i.e. expected improvement) or \'ucb\' (i.e. upper confidence bound)!')
             return;
         }
         this.initializePriors();
