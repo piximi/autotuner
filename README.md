@@ -35,13 +35,17 @@ The ojective function of the optimization can be specified (either 'error' or 'a
 ```javascript
 autotuner.gridSearchOptimizytion('accuracy');
 ```
+The acquisition function of the optimization can be specified. Either expected improvement (i.e. 'ei') or upper confidence bound (i.e. 'ucb'):
+```javascript
+autotuner.gridSearchOptimizytion('accuracy', 'ei');
+```
 Evaluating a model can be done using cross validation:
 ```javascript
-autotuner.gridSearchOptimizytion('accuracy', true);
+autotuner.gridSearchOptimizytion('accuracy', 'ei', true);
 ```
 When doing bayesian optimization the maximum number of domain points to be evaluated can be specified as an optional parameter:
 ```javascript
-autotuner.bayesianOptimization('accuracy', true, 0.8);
+autotuner.bayesianOptimization('accuracy', 'ei', true, 0.8);
 ```
 In the example above the optimizytion stops after 80% of the domain ponits have been evaluated. By default this value is set to 0.75.  
 ### Evaluate the best hyperparameters
